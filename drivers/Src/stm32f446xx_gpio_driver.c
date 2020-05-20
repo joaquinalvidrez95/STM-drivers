@@ -173,13 +173,13 @@ void Gpio_peripheral_clock_control(Gpio_reg_t *reg, uint8_t enable)
 /**
  * @brief 
  * 
- * @param gpiox 
+ * @param reg 
  * @param pin 
- * @return uint8_t 
+ * @return Gpio_button_state_t 
  */
-uint8_t Gpio_read_from_input_pin(Gpio_reg_t *reg, uint8_t pin)
+Gpio_button_state_t Gpio_read_from_input_pin(Gpio_reg_t *reg, uint8_t pin)
 {
-    return (uint8_t)((reg->IDR >> pin) & 0x00000001u);
+    return (Gpio_button_state_t)((reg->IDR >> pin) & 0x00000001u);
 }
 
 /**

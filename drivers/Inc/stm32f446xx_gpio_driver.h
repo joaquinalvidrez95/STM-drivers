@@ -81,12 +81,18 @@ typedef struct
     Gpio_pin_config_t pin_config;
 } Gpio_handle_t;
 
+typedef enum
+{
+    Gpio_button_state_low = 0u,
+    Gpio_button_state_high = 1u,
+} Gpio_button_state_t;
+
 void Gpio_init(Gpio_handle_t *handle);
 void Gpio_deinit(Gpio_reg_t *reg);
 
 void Gpio_peripheral_clock_control(Gpio_reg_t *reg, uint8_t enable);
 
-uint8_t Gpio_read_from_input_pin(Gpio_reg_t *reg, uint8_t pin);
+Gpio_button_state_t Gpio_read_from_input_pin(Gpio_reg_t *reg, uint8_t pin);
 uint16_t Gpio_read_from_input_port(Gpio_reg_t *reg);
 void Gpio_write_to_pin(Gpio_reg_t *reg, uint8_t pin, uint8_t value);
 void Gpio_write_to_output_port(Gpio_reg_t *reg, uint16_t value);
