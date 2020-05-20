@@ -6,6 +6,7 @@
  */
 
 #include "stm32f446xx_gpio_driver.h"
+#include <stddef.h>
 
 /**
  * @brief 
@@ -23,6 +24,33 @@ void Gpio_init(Gpio_handle_t *handle)
     }
     else
     {
+        switch (handle->pin_config.mode)
+        {
+        case Gpio_mode_interrupt_ft:
+            EXTI->FTSR |= 1u << handle->pin_config.number;
+            EXTI->RTSR &= ~(1u << handle->pin_config.number);
+            break;
+
+        case Gpio_mode_interrupt_rt:
+            EXTI->RTSR |= 1u << handle->pin_config.number;
+            EXTI->FTSR &= ~(1u << handle->pin_config.number);
+            break;
+
+        case Gpio_mode_interrupt_rft:
+            EXTI->RTSR |= 1u << handle->pin_config.number;
+            EXTI->FTSR |= 1u << handle->pin_config.number;
+            break;
+
+        default:
+            break;
+        }
+        /* Configures the GPIO port selection in SYSCFG_EXTICR */
+
+        SYSCFG_PCLK_EN();
+        size_t index = handle->pin_config.number / 4u;
+        uint8_t section = handle->pin_config.number % 4u;
+        SYSCFG->EXTICR[index] = Driver_gpio_address_to_code(handle->reg);
+        EXTI->IMR |= 1u << handle->pin_config.number;
     }
 
     /* Configures speed. */
@@ -241,8 +269,38 @@ void Gpio_toggle_pin(Gpio_reg_t *reg, uint8_t pin)
  * @param priority 
  * @param enable 
  */
-void Gpio_config_irq(uint8_t irq_number, uint8_t priority, uint8_t enable)
+void Gpio_config_irq(uint8_t irq_number, uint8_t priority, bool enable)
 {
+    if (enable == true)
+    {
+        if (irq_number <= 31u)
+        {
+            *NVIC_ISER0 |= 1u << irq_number;
+        }
+        else if ((irq_number > 31u) && (irq_number < 64u))
+        {
+            *NVIC_ISER1 |= 1u << (irq_number % 32u);
+        }
+        else if ((irq_number >= 64u) && (irq_number < 96u))
+        {
+            *NVIC_ISER3 |= 1u << (irq_number % 64u);
+        }
+    }
+    else
+    {
+        if (irq_number <= 31u)
+        {
+            *NVIC_ICER0 |= 1u << irq_number;
+        }
+        else if ((irq_number > 31u) && (irq_number < 64u))
+        {
+            *NVIC_ICER1 |= 1u << (irq_number % 32u);
+        }
+        else if ((irq_number >= 64u) && (irq_number < 96u))
+        {
+            *NVIC_ICER3 |= 1u << (irq_number % 64u);
+        }
+    }
 }
 
 /**

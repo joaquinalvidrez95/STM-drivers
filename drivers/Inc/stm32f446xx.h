@@ -10,6 +10,17 @@
 
 #include <stdint.h>
 
+/* ARM Cortex */
+#define NVIC_ISER0 ((volatile uint32_t *)0xE000E100u)
+#define NVIC_ISER1 ((volatile uint32_t *)0xE000E104u)
+#define NVIC_ISER2 ((volatile uint32_t *)0xE000E108u)
+#define NVIC_ISER3 ((volatile uint32_t *)0xE000E10Cu)
+
+#define NVIC_ICER0 ((volatile uint32_t *)0xE000E180u)
+#define NVIC_ICER1 ((volatile uint32_t *)0xE000E184u)
+#define NVIC_ICER2 ((volatile uint32_t *)0xE000E188u)
+#define NVIC_ICER3 ((volatile uint32_t *)0xE000E18Cu)
+
 #define FLASH_BASEADDR 0x08000000LU
 
 /** 112KB */
@@ -107,6 +118,27 @@ typedef struct
 	volatile uint32_t DCK_CFGR2;
 } Rcc_reg_t;
 
+typedef struct
+{
+	volatile uint32_t IMR;
+	volatile uint32_t EMR;
+	volatile uint32_t RTSR;
+	volatile uint32_t FTSR;
+	volatile uint32_t SWIER;
+	volatile uint32_t PR;
+} Exti_reg_t;
+
+typedef struct
+{
+	volatile uint32_t MEMRMP;
+	volatile uint32_t PMC;
+	volatile uint32_t EXTICR[4];
+	uint32_t reserved1[2];
+	volatile uint32_t CMPCR;
+	uint32_t reserved2[2];
+	volatile uint32_t CFGR;
+} Syscfg_reg_t;
+
 #define GPIOA ((Gpio_reg_t *)GPIOA_BASEADDR)
 #define GPIOB ((Gpio_reg_t *)GPIOB_BASEADDR)
 #define GPIOC ((Gpio_reg_t *)GPIOC_BASEADDR)
@@ -117,6 +149,8 @@ typedef struct
 #define GPIOH ((Gpio_reg_t *)GPIOH_BASEADDR)
 
 #define RCC ((Rcc_reg_t *)RCC_BASEADDR)
+#define EXTI ((Exti_reg_t *)EXTI_BASEADDR)
+#define SYSCFG ((Syscfg_reg_t *)SYSCFG_BASEADDR)
 
 /** Enables GPIOx */
 #define GPIOA_PCLCK_EN() (RCC->AHBENR[0] |= (1u << 0u))
@@ -192,6 +226,5 @@ typedef enum
 #define RESET DISABLE
 // #define GPIO_PIN_SET SET
 // #define GPIO_PIN_RESET RESET
-#include "stm32f446xx_gpio_driver.h"
-
+uint8_t Driver_gpio_address_to_code(Gpio_reg_t *);
 #endif /* INC_STM32F446XX_H_ */

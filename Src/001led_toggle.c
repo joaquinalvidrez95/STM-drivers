@@ -9,6 +9,7 @@
  * 
  */
 #include "stm32f446xx.h"
+#include "stm32f446xx_gpio_driver.h"
 
 #define Main_program_001_led_toggle 0
 #define Main_program_002_led_button 1
@@ -48,7 +49,6 @@ int main()
 int main()
 {
     Gpio_handle_t led;
-    Rcc_reg_t *p = RCC;
     led.reg = GPIOA;
     led.pin_config.number = Gpio_pin_5;
     led.pin_config.mode = Gpio_mode_out;

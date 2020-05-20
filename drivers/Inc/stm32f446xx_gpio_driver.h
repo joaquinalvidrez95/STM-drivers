@@ -9,6 +9,7 @@
 #define INC_STM32F446XX_GPIO_DRIVER_H_
 
 #include "stm32f446xx.h"
+#include <stdbool.h>
 
 typedef enum
 {
@@ -98,7 +99,7 @@ void Gpio_write_to_pin(Gpio_reg_t *reg, uint8_t pin, uint8_t value);
 void Gpio_write_to_output_port(Gpio_reg_t *reg, uint16_t value);
 void Gpio_toggle_pin(Gpio_reg_t *reg, uint8_t pin);
 
-void Gpio_config_irq(uint8_t irq_number, uint8_t priority, uint8_t enable);
+void Gpio_config_irq(uint8_t irq_number, uint8_t priority, bool enable);
 void Gpio_irq_handling(uint8_t pin);
 
 #endif /* INC_STM32F446XX_GPIO_DRIVER_H_ */
