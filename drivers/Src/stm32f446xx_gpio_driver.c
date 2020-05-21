@@ -68,8 +68,8 @@ void Gpio_init(Gpio_handle_t *handle)
     /* Configures alternate function */
     if (handle->pin_config.mode == Gpio_mode_alt_fn)
     {
-        uint32_t temp1 = handle->pin_config.number / 8u;
-        uint32_t tmp2 = handle->pin_config.number % 8u;
+        const uint32_t temp1 = handle->pin_config.number / 8u;
+        const uint32_t tmp2 = handle->pin_config.number % 8u;
         handle->reg->AFR[temp1] &= ~(0xFu << (4 * tmp2));
         handle->reg->AFR[temp1] |= handle->pin_config.alt_fun_mode << (4 * tmp2);
     }
@@ -269,7 +269,7 @@ void Gpio_toggle_pin(Gpio_reg_t *reg, uint8_t pin)
  * @param priority 
  * @param enable 
  */
-void Gpio_config_irq(uint8_t irq_number, uint8_t priority, bool enable)
+void Gpio_config_irq(uint8_t irq_number, bool enable)
 {
     if (enable == true)
     {
@@ -303,6 +303,14 @@ void Gpio_config_irq(uint8_t irq_number, uint8_t priority, bool enable)
     }
 }
 
+void Gpio_config_irq_priority(uint8_t irq_number, uint8_t priority)
+{
+    const uint8_t index = irq_number / 4u;
+    const uint8_t section = irq_number % 4u;
+    const uint8_t shift_amount = (8u * section) + (8u - NO_PR_BITS_IMPLEMENTED);
+    NVIC_PR_BASE_ADDR[index * 4u] |= priority << shift_amount;
+}
+
 /**
  * @brief 
  * 
@@ -310,4 +318,9 @@ void Gpio_config_irq(uint8_t irq_number, uint8_t priority, bool enable)
  */
 void Gpio_irq_handling(uint8_t pin)
 {
+    if (EXTI->PR & (1 << pin))
+    {
+        /* Clears */
+        EXTI->PR |= 1 << pin;
+    }
 }

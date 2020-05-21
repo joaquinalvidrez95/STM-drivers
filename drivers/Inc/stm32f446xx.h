@@ -21,6 +21,9 @@
 #define NVIC_ICER2 ((volatile uint32_t *)0xE000E188u)
 #define NVIC_ICER3 ((volatile uint32_t *)0xE000E18Cu)
 
+#define NO_PR_BITS_IMPLEMENTED 4u
+#define NVIC_PR_BASE_ADDR ((volatile uint32_t *)0xE000E400U)
+
 #define FLASH_BASEADDR 0x08000000LU
 
 /** 112KB */
