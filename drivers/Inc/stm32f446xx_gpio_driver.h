@@ -97,10 +97,10 @@ Gpio_button_state_t Gpio_read_from_input_pin(Gpio_reg_t *reg, uint8_t pin);
 uint16_t Gpio_read_from_input_port(Gpio_reg_t *reg);
 void Gpio_write_to_pin(Gpio_reg_t *reg, uint8_t pin, uint8_t value);
 void Gpio_write_to_output_port(Gpio_reg_t *reg, uint16_t value);
-void Gpio_toggle_pin(Gpio_reg_t *reg, uint8_t pin);
+void Gpio_toggle_pin(Gpio_reg_t *reg, Gpio_pin_t pin);
 
-void Gpio_config_irq(uint8_t irq_number, bool enable);
-void Gpio_config_irq_priority(uint8_t irq_number, uint8_t priority);
-void Gpio_irq_handling(uint8_t pin);
+void Gpio_config_irq(Irq_number_t irq_number, bool enable);
+void Gpio_config_irq_priority(Irq_number_t irq_number, Nvic_irq_priority_t priority);
+void Gpio_irq_handling(Gpio_pin_t pin);
 
 #endif /* INC_STM32F446XX_GPIO_DRIVER_H_ */

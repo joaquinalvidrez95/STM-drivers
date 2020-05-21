@@ -49,7 +49,7 @@ void Gpio_init(Gpio_handle_t *handle)
         SYSCFG_PCLK_EN();
         size_t index = handle->pin_config.number / 4u;
         uint8_t section = handle->pin_config.number % 4u;
-        SYSCFG->EXTICR[index] = Driver_gpio_address_to_code(handle->reg);
+        SYSCFG->EXTICR[index] = (uint32_t)Driver_gpio_address_to_code(handle->reg) << (section * 4u);
         EXTI->IMR |= 1u << handle->pin_config.number;
     }
 
@@ -257,7 +257,7 @@ void Gpio_write_to_output_port(Gpio_reg_t *reg, uint16_t value)
  * @param gpiox 
  * @param pin 
  */
-void Gpio_toggle_pin(Gpio_reg_t *reg, uint8_t pin)
+void Gpio_toggle_pin(Gpio_reg_t *reg, Gpio_pin_t pin)
 {
     reg->ODR ^= 1 << pin;
 }
@@ -269,7 +269,7 @@ void Gpio_toggle_pin(Gpio_reg_t *reg, uint8_t pin)
  * @param priority 
  * @param enable 
  */
-void Gpio_config_irq(uint8_t irq_number, bool enable)
+void Gpio_config_irq(Irq_number_t irq_number, bool enable)
 {
     if (enable == true)
     {
@@ -303,12 +303,12 @@ void Gpio_config_irq(uint8_t irq_number, bool enable)
     }
 }
 
-void Gpio_config_irq_priority(uint8_t irq_number, uint8_t priority)
+void Gpio_config_irq_priority(Irq_number_t irq_number, Nvic_irq_priority_t priority)
 {
     const uint8_t index = irq_number / 4u;
     const uint8_t section = irq_number % 4u;
     const uint8_t shift_amount = (8u * section) + (8u - NO_PR_BITS_IMPLEMENTED);
-    NVIC_PR_BASE_ADDR[index * 4u] |= priority << shift_amount;
+    NVIC_PR_BASE_ADDR[index] |= (uint32_t)priority << shift_amount;
 }
 
 /**
@@ -316,7 +316,7 @@ void Gpio_config_irq_priority(uint8_t irq_number, uint8_t priority)
  * 
  * @param pin 
  */
-void Gpio_irq_handling(uint8_t pin)
+void Gpio_irq_handling(Gpio_pin_t pin)
 {
     if (EXTI->PR & (1 << pin))
     {

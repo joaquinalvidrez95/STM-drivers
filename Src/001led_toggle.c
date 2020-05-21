@@ -11,16 +11,17 @@
 #include "stm32f446xx.h"
 #include "stm32f446xx_gpio_driver.h"
 
-#define Main_program_001_led_toggle 0
-#define Main_program_002_led_button 1
+#define MAIN_001_LED_TOGGLE 0
+#define MAIN_002_LED_BUTTON 1
+#define MAIN_005_BUTTTON_INTERRUPT 2
 
-#define MAIN Main_program_002_led_button
+#define MAIN MAIN_005_BUTTTON_INTERRUPT
 void delay()
 {
     for (uint32_t i = 0u; i < 500000u; i++)
         ;
 }
-#if MAIN == Main_program_001_led_toggle
+#if MAIN == MAIN_001_LED_TOGGLE
 
 int main()
 {
@@ -45,7 +46,7 @@ int main()
     return 0;
 }
 
-#elif MAIN == Main_program_002_led_button
+#elif MAIN == MAIN_002_LED_BUTTON
 int main()
 {
     Gpio_handle_t led;
@@ -79,5 +80,45 @@ int main()
     }
 
     return 0;
+}
+#elif MAIN == MAIN_005_BUTTTON_INTERRUPT
+static Gpio_handle_t button = {0u};
+static Gpio_handle_t led = {0u};
+int main()
+{
+    led.reg = GPIOA;
+    led.pin_config.number = Gpio_pin_5;
+    led.pin_config.mode = Gpio_mode_out;
+    led.pin_config.speed = Gpio_speed_fast;
+    led.pin_config.out_type = Gpio_out_type_push_pull;
+    led.pin_config.pull_mode = Gpio_pull_mode_none;
+
+    Gpio_peripheral_clock_control(led.reg, En_status_enable);
+    Gpio_init(&led);
+
+    button.reg = GPIOC;
+    button.pin_config.number = Gpio_pin_13;
+    button.pin_config.mode = Gpio_mode_interrupt_ft;
+    button.pin_config.speed = Gpio_speed_fast;
+    button.pin_config.pull_mode = Gpio_pull_mode_none;
+
+    Gpio_peripheral_clock_control(button.reg, En_status_enable);
+    Gpio_init(&button);
+
+    /* Configures IRQ */
+    Gpio_config_irq_priority(irq_number_exti15_10, nvic_irq_priority_15);
+    Gpio_config_irq(irq_number_exti15_10, true);
+
+    while (1);
+
+
+    return 0;
+}
+
+void EXTI15_10_IRQHandler()
+{
+	delay();
+    Gpio_irq_handling(button.pin_config.number);
+    Gpio_toggle_pin(led.reg, led.pin_config.number);
 }
 #endif

@@ -24,6 +24,49 @@
 #define NO_PR_BITS_IMPLEMENTED 4u
 #define NVIC_PR_BASE_ADDR ((volatile uint32_t *)0xE000E400U)
 
+typedef enum
+{
+	irq_number_exti0 = 6u,
+	irq_number_exti1 = 7u,
+	irq_number_exti2 = 8u,
+	irq_number_exti3 = 9u,
+	irq_number_exti4 = 10,
+	irq_number_exti9_5 = 23,
+	irq_number_i2c1_ev = 31,
+	irq_number_i2c1_er = 32,
+	irq_number_spi1 = 35,
+	irq_number_spi2 = 36,
+	irq_number_usart1 = 37,
+	irq_number_usart2 = 38,
+	irq_number_usart3 = 39,
+	irq_number_exti15_10 = 40,
+	irq_number_spi3 = 51,
+	irq_number_spi4,
+	irq_number_uart4 = 52,
+	irq_number_uart5 = 53,
+	irq_number_usart6 = 71,
+} Irq_number_t;
+
+typedef enum
+{
+	nvic_irq_priority_0 = 0u,
+	nvic_irq_priority_1,
+	nvic_irq_priority_2,
+	nvic_irq_priority_3,
+	nvic_irq_priority_4,
+	nvic_irq_priority_5,
+	nvic_irq_priority_6,
+	nvic_irq_priority_7,
+	nvic_irq_priority_8,
+	nvic_irq_priority_9,
+	nvic_irq_priority_10,
+	nvic_irq_priority_11,
+	nvic_irq_priority_12,
+	nvic_irq_priority_13,
+	nvic_irq_priority_14,
+	nvic_irq_priority_15,
+} Nvic_irq_priority_t;
+
 #define FLASH_BASEADDR 0x08000000LU
 
 /** 112KB */
