@@ -40,7 +40,7 @@ int main()
 
     while (1)
     {
-        Gpio_toggle_pin(led.reg, led.pin_config.number);
+        Gpio_toggle_pin(&led);
         delay();
     }
 
@@ -73,10 +73,10 @@ int main()
 
     while (1)
     {
-        if (Gpio_button_state_low == Gpio_read_from_input_pin(button.reg, button.pin_config.number))
+        if (Gpio_button_state_low == Gpio_read_from_input_pin(&button))
         {
             delay();
-            Gpio_toggle_pin(led.reg, led.pin_config.number);
+            Gpio_toggle_pin(&led);
         }
     }
 
@@ -120,6 +120,6 @@ void EXTI15_10_IRQHandler()
 {
     delay();
     Gpio_irq_handling(button.pin_config.number);
-    Gpio_toggle_pin(led.reg, led.pin_config.number);
+    Gpio_toggle_pin(&led);
 }
 #endif

@@ -205,9 +205,9 @@ void Gpio_peripheral_clock_control(Gpio_reg_t *reg, bool enable)
  * @param pin 
  * @return Gpio_button_state_t 
  */
-Gpio_button_state_t Gpio_read_from_input_pin(Gpio_reg_t *reg, uint8_t pin)
+Gpio_button_state_t Gpio_read_from_input_pin(Gpio_handle_t *handle)
 {
-    return (Gpio_button_state_t)((reg->IDR >> pin) & 0x00000001u);
+    return (Gpio_button_state_t)((handle->reg->IDR >> handle->pin_config.number) & 0x00000001u);
 }
 
 /**
@@ -224,19 +224,18 @@ uint16_t Gpio_read_from_input_port(Gpio_reg_t *reg)
 /**
  * @brief 
  * 
- * @param gpiox 
- * @param pin 
+ * @param handle 
  * @param value 
  */
-void Gpio_write_to_pin(Gpio_reg_t *reg, uint8_t pin, uint8_t value)
+void Gpio_write_to_pin(Gpio_handle_t *handle, Gpio_pin_status_t value)
 {
     if (value == Gpio_pin_status_set)
     {
-        reg->ODR |= 1 << pin;
+        handle->reg->ODR |= 1 << handle->pin_config.number;
     }
     else
     {
-        reg->ODR &= ~(1 << pin);
+        handle->reg->ODR &= ~(1 << handle->pin_config.number);
     }
 }
 
@@ -257,9 +256,9 @@ void Gpio_write_to_output_port(Gpio_reg_t *reg, uint16_t value)
  * @param gpiox 
  * @param pin 
  */
-void Gpio_toggle_pin(Gpio_reg_t *reg, Gpio_pin_t pin)
+void Gpio_toggle_pin(Gpio_handle_t *handle)
 {
-    reg->ODR ^= 1 << pin;
+    handle->reg->ODR ^= 1u << handle->pin_config.number;
 }
 
 /**

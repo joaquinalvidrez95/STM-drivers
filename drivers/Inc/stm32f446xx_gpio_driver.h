@@ -93,11 +93,11 @@ void Gpio_deinit(Gpio_reg_t *reg);
 
 void Gpio_peripheral_clock_control(Gpio_reg_t *reg, bool enable);
 
-Gpio_button_state_t Gpio_read_from_input_pin(Gpio_reg_t *reg, uint8_t pin);
+Gpio_button_state_t Gpio_read_from_input_pin(Gpio_handle_t *handle);
 uint16_t Gpio_read_from_input_port(Gpio_reg_t *reg);
-void Gpio_write_to_pin(Gpio_reg_t *reg, uint8_t pin, uint8_t value);
+void Gpio_write_to_pin(Gpio_handle_t *handle, Gpio_pin_status_t value);
 void Gpio_write_to_output_port(Gpio_reg_t *reg, uint16_t value);
-void Gpio_toggle_pin(Gpio_reg_t *reg, Gpio_pin_t pin);
+void Gpio_toggle_pin(Gpio_handle_t *handle);
 
 void Gpio_config_irq(Irq_number_t irq_number, bool enable);
 void Gpio_config_irq_priority(Irq_number_t irq_number, Nvic_irq_priority_t priority);
