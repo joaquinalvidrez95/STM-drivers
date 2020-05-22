@@ -113,6 +113,7 @@ typedef enum
 
 /** APB2 */
 #define SPI1_BASEADDR (APB2PERIPH_BASE + 0x3000u)
+#define SPI4_BASEADDR (APB2PERIPH_BASE + 0x3400u)
 
 #define EXTI_BASEADDR (APB2PERIPH_BASE + 0x3C00u)
 
@@ -122,6 +123,19 @@ typedef enum
 #define SYSCFG_BASEADDR (APB2PERIPH_BASE + 0x3800u)
 
 /** Registers */
+typedef struct
+{
+	volatile uint32_t CR[2];
+	volatile uint32_t SR;
+	volatile uint32_t DR;
+	volatile uint32_t DR;
+	volatile uint32_t CRCPR;
+	volatile uint32_t RXCRCR;
+	volatile uint32_t TXCRCR;
+	volatile uint32_t I2SCFGR;
+	volatile uint32_t I2SPR;
+} Spi_reg_t;
+
 typedef struct
 {
 	volatile uint32_t MODER;
@@ -197,6 +211,12 @@ typedef struct
 #define RCC ((Rcc_reg_t *)RCC_BASEADDR)
 #define EXTI ((Exti_reg_t *)EXTI_BASEADDR)
 #define SYSCFG ((Syscfg_reg_t *)SYSCFG_BASEADDR)
+#define SYSCFG ((Syscfg_reg_t *)SYSCFG_BASEADDR)
+
+#define SPI1 ((Spi_reg_t *)SPI1_BASEADDR)
+#define SPI2 ((Spi_reg_t *)SPI2_BASEADDR)
+#define SPI3 ((Spi_reg_t *)SPI3_BASEADDR)
+#define SPI4 ((Spi_reg_t *)SPI4_BASEADDR)
 
 /** Enables GPIOx */
 #define GPIOA_PCLCK_EN() (RCC->AHBENR[0] |= (1u << 0u))
@@ -227,6 +247,7 @@ typedef struct
 #define SPI1_PCLK_EN() (RCC->APBENR[1] |= (1u << 12u))
 #define SPI2_PCLK_EN() (RCC->APBENR[0] |= (1u << 14u))
 #define SPI3_PCLK_EN() (RCC->APBENR[0] |= (1u << 15u))
+#define SPI4_PCLK_EN() (RCC->APBENR[1] |= (1u << 13u))
 
 /** Enables USARTx */
 #define USART1_PCLK_EN() (RCC->APBENR[1] |= (1u << 4u))

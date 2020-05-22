@@ -91,7 +91,7 @@ typedef enum
 void Gpio_init(Gpio_handle_t *handle);
 void Gpio_deinit(Gpio_reg_t *reg);
 
-void Gpio_peripheral_clock_control(Gpio_reg_t *reg, uint8_t enable);
+void Gpio_peripheral_clock_control(Gpio_reg_t *reg, bool enable);
 
 Gpio_button_state_t Gpio_read_from_input_pin(Gpio_reg_t *reg, uint8_t pin);
 uint16_t Gpio_read_from_input_port(Gpio_reg_t *reg);

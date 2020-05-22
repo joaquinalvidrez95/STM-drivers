@@ -19,7 +19,8 @@
 void delay()
 {
     for (uint32_t i = 0u; i < 500000u; i++)
-        ;
+    {
+    }
 }
 #if MAIN == MAIN_001_LED_TOGGLE
 
@@ -57,7 +58,7 @@ int main()
     led.pin_config.out_type = Gpio_out_type_push_pull;
     led.pin_config.pull_mode = Gpio_pull_mode_none;
 
-    Gpio_peripheral_clock_control(led.reg, En_status_enable);
+    Gpio_peripheral_clock_control(led.reg, true);
     Gpio_init(&led);
 
     Gpio_handle_t button;
@@ -67,7 +68,7 @@ int main()
     button.pin_config.speed = Gpio_speed_fast;
     button.pin_config.pull_mode = Gpio_pull_mode_none;
 
-    Gpio_peripheral_clock_control(button.reg, En_status_enable);
+    Gpio_peripheral_clock_control(button.reg, true);
     Gpio_init(&button);
 
     while (1)
@@ -93,7 +94,7 @@ int main()
     led.pin_config.out_type = Gpio_out_type_push_pull;
     led.pin_config.pull_mode = Gpio_pull_mode_none;
 
-    Gpio_peripheral_clock_control(led.reg, En_status_enable);
+    Gpio_peripheral_clock_control(led.reg, true);
     Gpio_init(&led);
 
     button.reg = GPIOC;
@@ -102,22 +103,22 @@ int main()
     button.pin_config.speed = Gpio_speed_fast;
     button.pin_config.pull_mode = Gpio_pull_mode_none;
 
-    Gpio_peripheral_clock_control(button.reg, En_status_enable);
+    Gpio_peripheral_clock_control(button.reg, true);
     Gpio_init(&button);
 
     /* Configures IRQ */
     Gpio_config_irq_priority(irq_number_exti15_10, nvic_irq_priority_15);
     Gpio_config_irq(irq_number_exti15_10, true);
 
-    while (1);
-
+    while (1)
+        ;
 
     return 0;
 }
 
 void EXTI15_10_IRQHandler()
 {
-	delay();
+    delay();
     Gpio_irq_handling(button.pin_config.number);
     Gpio_toggle_pin(led.reg, led.pin_config.number);
 }

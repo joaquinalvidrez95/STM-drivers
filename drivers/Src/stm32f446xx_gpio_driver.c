@@ -124,7 +124,7 @@ void Gpio_deinit(Gpio_reg_t *reg)
  * @param gpiox 
  * @param enable 
  */
-void Gpio_peripheral_clock_control(Gpio_reg_t *reg, uint8_t enable)
+void Gpio_peripheral_clock_control(Gpio_reg_t *reg, bool enable)
 {
     if (enable == En_status_enable)
     {
