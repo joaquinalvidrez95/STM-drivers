@@ -13,66 +13,92 @@
 
 typedef enum
 {
-    Gpio_mode_in = 0u,
-    Gpio_mode_out = 1u,
-    Gpio_mode_alt_fn = 2u,
-    Gpio_mode_analog = 3u,
+    GPIO_MODE_IN = 0u,
+    GPIO_MODE_OUT = 1u,
+    GPIO_MODE_ALT_FN = 2u,
+    GPIO_MODE_ANALOG = 3u,
 
     /* Interrupts */
-    Gpio_mode_interrupt_ft = 4u,
-    Gpio_mode_interrupt_rt = 5u,
-    Gpio_mode_interrupt_rft = 6u,
-} Gpio_mode_t;
+    GPIO_MODE_INTERRUPT_FT = 4u,
+    GPIO_MODE_INTERRUPT_RT = 5u,
+    GPIO_MODE_INTERRUPT_RFT = 6u,
+} Gpio_mode_e;
 
 typedef enum
 {
-    Gpio_out_type_push_pull = 0u,
-    Gpio_out_type_open_drain = 1u,
-} Gpio_out_type_t;
+    GPIO_OUT_TYPE_PUSH_PULL = 0u,
+    GPIO_OUT_TYPE_OPEN_DRAIN = 1u,
+} Gpio_out_type_e;
 
 typedef enum
 {
-    Gpio_speed_low = 0u,
-    Gpio_speed_med = 1u,
-    Gpio_speed_fast = 2u,
-    Gpio_speed_high = 3u,
-} Gpio_speed_t;
+    GPIO_SPEED_LOW = 0u,
+    GPIO_SPEED_MED = 1u,
+    GPIO_SPEED_FAST = 2u,
+    GPIO_SPEED_HIGH = 3u,
+} Gpio_speed_e;
 
 typedef enum
 {
-    Gpio_pull_mode_none = 0u,
-    Gpio_pull_mode_up = 1u,
-    Gpio_pull_mode_down = 2u,
-} Gpio_pull_mode_t;
+    GPIO_PULL_MODE_NONE = 0u,
+    GPIO_PULL_MODE_UP = 1u,
+    GPIO_PULL_MODE_DOWN = 2u,
+} Gpio_pull_mode_e;
 
 typedef enum
 {
-    Gpio_pin_0 = 0u,
-    Gpio_pin_1,
-    Gpio_pin_2,
-    Gpio_pin_3,
-    Gpio_pin_4,
-    Gpio_pin_5,
-    Gpio_pin_6,
-    Gpio_pin_7,
-    Gpio_pin_8,
-    Gpio_pin_9,
-    Gpio_pin_10,
-    Gpio_pin_11,
-    Gpio_pin_12,
-    Gpio_pin_13,
-    Gpio_pin_14,
-    Gpio_pin_15,
-    Gpio_pin_16,
-} Gpio_pin_t;
+    GPIO_PIN_0 = 0u,
+    GPIO_PIN_1,
+    GPIO_PIN_2,
+    GPIO_PIN_3,
+    GPIO_PIN_4,
+    GPIO_PIN_5,
+    GPIO_PIN_6,
+    GPIO_PIN_7,
+    GPIO_PIN_8,
+    GPIO_PIN_9,
+    GPIO_PIN_10,
+    GPIO_PIN_11,
+    GPIO_PIN_12,
+    GPIO_PIN_13,
+    GPIO_PIN_14,
+    GPIO_PIN_15,
+    GPIO_PIN_16,
+} Gpio_pin_e;
+
+typedef enum
+{
+    GPIO_BUTTON_STATE_LOW = 0u,
+    GPIO_BUTTON_STATE_HIGH = 1u,    
+} Gpio_button_state_e;
+
+typedef enum
+{
+    GPIO_ALTERNATE_FUNCTION_0 = 0u,
+    GPIO_ALTERNATE_FUNCTION_1,
+    GPIO_ALTERNATE_FUNCTION_2,
+    GPIO_ALTERNATE_FUNCTION_3,
+    GPIO_ALTERNATE_FUNCTION_4,
+    GPIO_ALTERNATE_FUNCTION_5,
+    GPIO_ALTERNATE_FUNCTION_6,
+    GPIO_ALTERNATE_FUNCTION_7,
+    GPIO_ALTERNATE_FUNCTION_8,
+    GPIO_ALTERNATE_FUNCTION_9,
+    GPIO_ALTERNATE_FUNCTION_10,
+    GPIO_ALTERNATE_FUNCTION_11,
+    GPIO_ALTERNATE_FUNCTION_12,
+    GPIO_ALTERNATE_FUNCTION_13,
+    GPIO_ALTERNATE_FUNCTION_14,
+    GPIO_ALTERNATE_FUNCTION_15,
+} Gpio_alternate_function_e;
 
 typedef struct
 {
-    Gpio_pin_t number;
-    Gpio_mode_t mode;
-    Gpio_speed_t speed;
-    Gpio_pull_mode_t pull_mode;
-    Gpio_out_type_t out_type;
+    Gpio_pin_e number;
+    Gpio_mode_e mode;
+    Gpio_speed_e speed;
+    Gpio_pull_mode_e pull_mode;
+    Gpio_out_type_e out_type;
     uint8_t alt_fun_mode;
 } Gpio_pin_config_t;
 
@@ -82,18 +108,12 @@ typedef struct
     Gpio_pin_config_t pin_config;
 } Gpio_handle_t;
 
-typedef enum
-{
-    Gpio_button_state_low = 0u,
-    Gpio_button_state_high = 1u,
-} Gpio_button_state_t;
-
 void Gpio_init(Gpio_handle_t *handle);
 void Gpio_deinit(Gpio_reg_t *reg);
 
 void Gpio_peripheral_clock_control(Gpio_reg_t *reg, bool enable);
 
-Gpio_button_state_t Gpio_read_from_input_pin(Gpio_handle_t *handle);
+Gpio_button_state_e Gpio_read_from_input_pin(Gpio_handle_t *handle);
 uint16_t Gpio_read_from_input_port(Gpio_reg_t *reg);
 void Gpio_write_to_pin(Gpio_handle_t *handle, Gpio_pin_status_t value);
 void Gpio_write_to_output_port(Gpio_reg_t *reg, uint16_t value);
@@ -101,6 +121,6 @@ void Gpio_toggle_pin(Gpio_handle_t *handle);
 
 void Gpio_config_irq(Irq_number_t irq_number, bool enable);
 void Gpio_config_irq_priority(Irq_number_t irq_number, Nvic_irq_priority_t priority);
-void Gpio_irq_handling(Gpio_pin_t pin);
+void Gpio_irq_handling(Gpio_pin_e pin);
 
 #endif /* INC_STM32F446XX_GPIO_DRIVER_H_ */

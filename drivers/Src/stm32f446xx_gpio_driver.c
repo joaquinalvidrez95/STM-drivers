@@ -15,9 +15,11 @@
  */
 void Gpio_init(Gpio_handle_t *handle)
 {
+    Gpio_peripheral_clock_control(handle->reg, true);
+
     /* TODO: Check if memset */
     /* Configures mode. */
-    if (handle->pin_config.mode <= Gpio_mode_analog)
+    if (handle->pin_config.mode <= GPIO_MODE_ANALOG)
     {
         handle->reg->MODER &= ~(0x3u << (2 * handle->pin_config.number));
         handle->reg->MODER |= handle->pin_config.mode << (2 * handle->pin_config.number);
@@ -26,17 +28,17 @@ void Gpio_init(Gpio_handle_t *handle)
     {
         switch (handle->pin_config.mode)
         {
-        case Gpio_mode_interrupt_ft:
+        case GPIO_MODE_INTERRUPT_FT:
             EXTI->FTSR |= 1u << handle->pin_config.number;
             EXTI->RTSR &= ~(1u << handle->pin_config.number);
             break;
 
-        case Gpio_mode_interrupt_rt:
+        case GPIO_MODE_INTERRUPT_RT:
             EXTI->RTSR |= 1u << handle->pin_config.number;
             EXTI->FTSR &= ~(1u << handle->pin_config.number);
             break;
 
-        case Gpio_mode_interrupt_rft:
+        case GPIO_MODE_INTERRUPT_RFT:
             EXTI->RTSR |= 1u << handle->pin_config.number;
             EXTI->FTSR |= 1u << handle->pin_config.number;
             break;
@@ -66,7 +68,7 @@ void Gpio_init(Gpio_handle_t *handle)
     handle->reg->OTYPER |= handle->pin_config.out_type << handle->pin_config.out_type;
 
     /* Configures alternate function */
-    if (handle->pin_config.mode == Gpio_mode_alt_fn)
+    if (handle->pin_config.mode == GPIO_MODE_ALT_FN)
     {
         const uint32_t temp1 = handle->pin_config.number / 8u;
         const uint32_t tmp2 = handle->pin_config.number % 8u;
@@ -203,11 +205,11 @@ void Gpio_peripheral_clock_control(Gpio_reg_t *reg, bool enable)
  * 
  * @param reg 
  * @param pin 
- * @return Gpio_button_state_t 
+ * @return Gpio_button_state_e 
  */
-Gpio_button_state_t Gpio_read_from_input_pin(Gpio_handle_t *handle)
+Gpio_button_state_e Gpio_read_from_input_pin(Gpio_handle_t *handle)
 {
-    return (Gpio_button_state_t)((handle->reg->IDR >> handle->pin_config.number) & 0x00000001u);
+    return (Gpio_button_state_e)((handle->reg->IDR >> handle->pin_config.number) & 0x00000001u);
 }
 
 /**
@@ -315,7 +317,7 @@ void Gpio_config_irq_priority(Irq_number_t irq_number, Nvic_irq_priority_t prior
  * 
  * @param pin 
  */
-void Gpio_irq_handling(Gpio_pin_t pin)
+void Gpio_irq_handling(Gpio_pin_e pin)
 {
     if (EXTI->PR & (1 << pin))
     {

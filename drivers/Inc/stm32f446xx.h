@@ -125,8 +125,52 @@ typedef enum
 /** Registers */
 typedef struct
 {
-	volatile uint32_t CR[2];
-	volatile uint32_t SR;
+	struct
+	{
+		volatile unsigned int CPHA : 1;
+		volatile unsigned int CPOL : 1;
+		volatile unsigned int MSTR : 1;
+		volatile unsigned int BR : 3;
+		volatile unsigned int SPE : 1;
+		volatile unsigned int LSBFIRST : 1;
+		volatile unsigned int SSI : 1;
+		volatile unsigned int SSM : 1;
+		volatile unsigned int RXONLY : 1;
+		volatile unsigned int DFF : 1;
+		volatile unsigned int CRCNEXT : 1;
+		volatile unsigned int CRCEN : 1;
+		volatile unsigned int BIDIOE : 1;
+		volatile unsigned int BIDIMODE : 1;
+		unsigned int reserved : 16;
+	} CR1;
+	struct
+	{
+		volatile unsigned int RXDMAEN : 1;
+		volatile unsigned int TXDMAEN : 1;
+		volatile unsigned int SSOE : 1;
+		unsigned int reserved_0 : 1;
+		volatile unsigned int FRF : 1;
+		volatile unsigned int ERRIE : 1;
+		volatile unsigned int RXNEIE : 1;
+		volatile unsigned int TXNEIE : 1;
+		unsigned int reserved_1 : 24;
+	} CR2;
+
+	struct
+	{
+		volatile unsigned int RXNE : 1;
+		volatile unsigned int TXE : 1;
+		volatile unsigned int CHSIDE : 1;
+		volatile unsigned int UDR : 1;
+		volatile unsigned int CRCERR : 1;
+		volatile unsigned int MODF : 1;
+		volatile unsigned int OVR : 1;
+		volatile unsigned int BSY : 1;
+		volatile unsigned int FRE : 1;
+		unsigned int reserved : 23;
+	} SR;
+
+	// volatile uint32_t SR;
 	volatile uint32_t DR;
 	volatile uint32_t CRCPR;
 	volatile uint32_t RXCRCR;
@@ -198,14 +242,14 @@ typedef struct
 	volatile uint32_t CFGR;
 } Syscfg_reg_t;
 
-#define GPIOA ((Gpio_reg_t *)GPIOA_BASEADDR)
-#define GPIOB ((Gpio_reg_t *)GPIOB_BASEADDR)
-#define GPIOC ((Gpio_reg_t *)GPIOC_BASEADDR)
-#define GPIOD ((Gpio_reg_t *)GPIOD_BASEADDR)
-#define GPIOE ((Gpio_reg_t *)GPIOE_BASEADDR)
-#define GPIOF ((Gpio_reg_t *)GPIOF_BASEADDR)
-#define GPIOG ((Gpio_reg_t *)GPIOG_BASEADDR)
-#define GPIOH ((Gpio_reg_t *)GPIOH_BASEADDR)
+#define GPIOA ((Gpio_reg_t *const)GPIOA_BASEADDR)
+#define GPIOB ((Gpio_reg_t *const)GPIOB_BASEADDR)
+#define GPIOC ((Gpio_reg_t *const)GPIOC_BASEADDR)
+#define GPIOD ((Gpio_reg_t *const)GPIOD_BASEADDR)
+#define GPIOE ((Gpio_reg_t *const)GPIOE_BASEADDR)
+#define GPIOF ((Gpio_reg_t *const)GPIOF_BASEADDR)
+#define GPIOG ((Gpio_reg_t *const)GPIOG_BASEADDR)
+#define GPIOH ((Gpio_reg_t *const)GPIOH_BASEADDR)
 
 #define RCC ((Rcc_reg_t *)RCC_BASEADDR)
 #define EXTI ((Exti_reg_t *)EXTI_BASEADDR)
@@ -248,6 +292,11 @@ typedef struct
 #define SPI3_PCLK_EN() (RCC->APBENR[0] |= (1u << 15u))
 #define SPI4_PCLK_EN() (RCC->APBENR[1] |= (1u << 13u))
 
+#define SPI1_PCLK_DI() (RCC->APBENR[1] &= ~(1u << 12u))
+#define SPI2_PCLK_DI() (RCC->APBENR[0] &= ~(1u << 14u))
+#define SPI3_PCLK_DI() (RCC->APBENR[0] &= ~(1u << 15u))
+#define SPI4_PCLK_DI() (RCC->APBENR[1] &= ~(1u << 13u))
+
 /** Enables USARTx */
 #define USART1_PCLK_EN() (RCC->APBENR[1] |= (1u << 4u))
 #define USART2_PCLK_EN() (RCC->APBENR[0] |= (1u << 17u))
@@ -257,6 +306,7 @@ typedef struct
 /** Enables SYSCFG */
 #define SYSCFG_PCLK_EN() (RCC->APBENR[1] |= (1u << 14u))
 
+/** Resets peripheral */
 typedef enum
 {
 	Gpio_reset_port_a = 0u,
@@ -274,6 +324,35 @@ typedef enum
 	{                                        \
 		(RCC->AHB_RSTR[0] |= (1u << port));  \
 		(RCC->AHB_RSTR[0] &= ~(1u << port)); \
+	} while (0u)
+
+/* SPI */
+#define SPI1_REG_RESET()                    \
+	do                                      \
+	{                                       \
+		(RCC->APB_RSTR[1] |= (1u << 12u));  \
+		(RCC->APB_RSTR[1] &= ~(1u << 12u)); \
+	} while (0u)
+
+#define SPI2_REG_RESET()                    \
+	do                                      \
+	{                                       \
+		(RCC->APB_RSTR[0] |= (1u << 14u));  \
+		(RCC->APB_RSTR[0] &= ~(1u << 14u)); \
+	} while (0u)
+
+#define SPI3_REG_RESET()                    \
+	do                                      \
+	{                                       \
+		(RCC->APB_RSTR[0] |= (1u << 15u));  \
+		(RCC->APB_RSTR[0] &= ~(1u << 15u)); \
+	} while (0u)
+
+#define SPI4_REG_RESET()                    \
+	do                                      \
+	{                                       \
+		(RCC->APB_RSTR[1] |= (1u << 13u));  \
+		(RCC->APB_RSTR[1] &= ~(1u << 13u)); \
 	} while (0u)
 
 typedef enum
