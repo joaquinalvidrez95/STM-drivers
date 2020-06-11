@@ -324,7 +324,52 @@ typedef struct
     Gpio_handle_t nss;
 } Spi_pins_t;
 
-static void init_gpio(Spi_pins_t *pins)
+typedef enum
+{
+    COMMAND_LED_CTRL,
+    COMMAND_SENSOR_READ,
+    COMMAND_LED_READ,
+    COMMAND_PRINT,
+    COMMAND_ID_READ,
+} Command_e;
+
+typedef enum
+{
+    LED_STATUS_OFF = 0u,
+    LED_STATUS_ON = 1u
+} Led_status_e;
+
+typedef enum
+{
+    ARDUINO_ANALOG_PIN_0 = 0u,
+    ARDUINO_ANALOG_PIN_1 = 1u,
+    ARDUINO_ANALOG_PIN_2 = 2u,
+    ARDUINO_ANALOG_PIN_3 = 3u,
+    ARDUINO_ANALOG_PIN_4 = 4u,
+} Arduino_analog_pin_e;
+
+typedef enum
+{
+    ARDUINO_DIGITAL_PIN_0 = 0u,
+    ARDUINO_DIGITAL_PIN_1,
+    ARDUINO_DIGITAL_PIN_2,
+    ARDUINO_DIGITAL_PIN_3,
+    ARDUINO_DIGITAL_PIN_4,
+    ARDUINO_DIGITAL_PIN_5,
+    ARDUINO_DIGITAL_PIN_6,
+    ARDUINO_DIGITAL_PIN_7,
+    ARDUINO_DIGITAL_PIN_8,
+    ARDUINO_DIGITAL_PIN_9,
+    ARDUINO_DIGITAL_PIN_10,
+    ARDUINO_DIGITAL_PIN_11,
+    ARDUINO_DIGITAL_PIN_12,
+    ARDUINO_DIGITAL_PIN_13,
+} Arduino_digital_pin_e;
+
+#define LED_PIN ARDUINO_DIGITAL_PIN_9
+
+static void
+init_gpio(Spi_pins_t *pins)
 {
     pins->clock.reg = GPIOA;
     pins->clock.pin_config.number = GPIO_PIN_9;
@@ -348,7 +393,7 @@ static void init_gpio(Spi_pins_t *pins)
     pins->miso.pin_config.alt_fun_mode = GPIO_ALTERNATE_FUNCTION_5;
     pins->miso.pin_config.out_type = GPIO_OUT_TYPE_PUSH_PULL;
     pins->miso.pin_config.pull_mode = GPIO_PULL_MODE_UP;
-    Gpio_init(&pins->mosi);
+    Gpio_init(&pins->miso);
 
     pins->nss.reg = GPIOB;
     pins->nss.pin_config.number = GPIO_PIN_4;
@@ -384,9 +429,127 @@ static void init_button(Gpio_handle_t *button)
     Gpio_init(button);
 }
 
+static bool is_response_correct(uint8_t ack_byte)
+{
+    return ack_byte == 0xF5u;
+}
+
+static void read_dummy(Spi_handle_t *spi)
+{
+    /* Does dummy read to clear off the RXNE */
+    uint8_t dummy_read = 0u;
+    spi->rx.data = &dummy_read;
+    spi->rx.size = sizeof(dummy_read);
+    Spi_receive(spi);
+}
+
+static void send_dummy(Spi_handle_t *spi)
+{
+    /* Sends some dummy bits to fetch the response from the slave */
+    uint8_t dummy_byte = 0xFFu;
+    spi->tx.data = &dummy_byte;
+    spi->tx.size = sizeof(dummy_byte);
+    Spi_send(spi);
+}
+
+static bool verify_response(Spi_handle_t *spi)
+{
+
+    uint8_t ack_byte = 0u;
+    spi->rx.data = &ack_byte;
+    spi->rx.size = sizeof(ack_byte);
+    Spi_receive(spi);
+
+    return is_response_correct(ack_byte);
+}
+static bool send_command(Spi_handle_t *spi, Command_e command, uint8_t arguments[], size_t arguments_length)
+{
+    /* Command 1 */
+    spi->tx.data = (uint8_t *)&command;
+    spi->tx.size = sizeof(uint8_t);
+    Spi_send(spi);
+
+    read_dummy(spi);
+    send_dummy(spi);
+
+    const bool result = verify_response(spi);
+
+    if (result && (arguments != NULL))
+    {
+        spi->tx.data = &arguments[0];
+        spi->tx.size = arguments_length;
+        Spi_send(spi);
+    }
+
+    return result;
+}
+
+static Led_status_e read_digital(Spi_handle_t *spi, Arduino_digital_pin_e pin)
+{
+    Led_status_e read = 0u;
+    if (send_command(spi, COMMAND_LED_READ, (uint8_t *)&pin, sizeof(uint8_t)))
+    {
+        read_dummy(spi);
+        delay();
+        send_dummy(spi);
+
+        spi->rx.data = (uint8_t *)&read;
+        spi->rx.size = sizeof(uint8_t);
+        Spi_receive(spi);
+    }
+
+    return read;
+}
+
+static void write_led(Spi_handle_t *spi, Led_status_e status, Arduino_digital_pin_e pin)
+{
+    uint8_t arguments[] = {(uint8_t)pin, (uint8_t)status};
+    send_command(spi, COMMAND_LED_CTRL, arguments, sizeof(arguments));
+}
+
+static uint8_t read_analog(Spi_handle_t *spi, Arduino_analog_pin_e pin)
+{
+    uint8_t analog_read = 0u;
+
+    if (send_command(spi, COMMAND_SENSOR_READ, (uint8_t *)&pin, sizeof(uint8_t)))
+    {
+        read_dummy(spi);
+        delay();
+        send_dummy(spi);
+
+        spi->rx.data = &analog_read;
+        spi->rx.size = sizeof(analog_read);
+        Spi_receive(spi);
+    }
+
+    return analog_read;
+}
+
+static void arduino_print(Spi_handle_t *spi, const char message[])
+{
+    char new_message[UINT8_MAX + 1u] = {'\0'};
+    size_t s = strlen(message);
+    strcpy(new_message, (const char *)&s);
+    strcat(new_message, message);
+    send_command(spi, COMMAND_PRINT, (uint8_t *)new_message, strlen(new_message));
+}
+
+static void arduino_read_id(Spi_handle_t *spi, char id[], size_t length)
+{
+    if (send_command(spi, COMMAND_ID_READ, NULL, 0u))
+    {
+        read_dummy(spi);
+        delay();
+        send_dummy(spi);
+
+        spi->rx.data = (uint8_t *)id;
+        spi->rx.size = length;
+        Spi_receive(spi);
+    }
+}
+
 int main()
 {
-    char user_data[] = "hello world";
     Spi_pins_t gpio_spi = {0u};
     init_gpio(&gpio_spi);
 
@@ -397,7 +560,7 @@ int main()
     Gpio_handle_t button;
     init_button(&button);
 
-    while (1)
+    while (true)
     {
         while (GPIO_BUTTON_STATE_HIGH == Gpio_read_from_input_pin(&button))
         {
@@ -405,14 +568,17 @@ int main()
         delay();
 
         Spi_enable_peripheral(spi.reg, true);
-        uint8_t length = strlen(user_data);
-        spi.tx.data = &length;
-        spi.tx.size = sizeof(length);
-        Spi_send(&spi);
 
-        spi.tx.data = (uint8_t *)user_data;
-        spi.tx.size = length;
-        Spi_send(&spi);
+        write_led(&spi, LED_STATUS_ON, LED_PIN);
+
+        while (GPIO_BUTTON_STATE_HIGH == Gpio_read_from_input_pin(&button))
+        {
+        }
+        delay();
+
+        read_analog(&spi, ARDUINO_ANALOG_PIN_0);
+
+        read_digital(&spi, LED_PIN);
         while (spi.reg->SR.BSY)
         {
         }
