@@ -9,6 +9,7 @@
  * 
  */
 #include <string.h>
+#include <stdio.h>
 #include "stm32f446xx.h"
 #include "stm32f446xx_gpio_driver.h"
 #include "stm32f446xx_spi_driver.h"
@@ -22,6 +23,8 @@
 
 #define MAIN MAIN_008_SPI_ARDUINO
 
+extern void initialise_monitor_handles();
+
 void delay()
 {
     for (uint32_t i = 0u; i < 500000u; i++)
@@ -33,9 +36,8 @@ void delay()
 int main()
 {
     Gpio_handle_t led;
-    Rcc_reg_t *p = RCC;
     led.reg = GPIOA;
-    led.pin_config.number = Gpio_pin_5;
+    led.pin_config.number = GPIO_PIN_5;
     led.pin_config.mode = GPIO_MODE_OUT;
     led.pin_config.speed = GPIO_SPEED_FAST;
     led.pin_config.out_type = GPIO_OUT_TYPE_PUSH_PULL;
@@ -309,12 +311,6 @@ int main()
     return 0;
 }
 #elif MAIN == MAIN_008_SPI_ARDUINO
-/**
- * SPICLK - PA9 - D8
- * SPIMOSI - PB15 - H26
- * SPIMISO - PC2 - Left header 35
- * NSS - PB4 - D5
- */
 
 typedef struct
 {
@@ -326,11 +322,11 @@ typedef struct
 
 typedef enum
 {
-    COMMAND_LED_CTRL,
-    COMMAND_SENSOR_READ,
-    COMMAND_LED_READ,
-    COMMAND_PRINT,
-    COMMAND_ID_READ,
+    COMMAND_LED_CTRL = 0x50u,
+    COMMAND_SENSOR_READ = 0x51u,
+    COMMAND_LED_READ = 0x52u,
+    COMMAND_PRINT = 0x53u,
+    COMMAND_ID_READ = 0x54,
 } Command_e;
 
 typedef enum
@@ -367,9 +363,15 @@ typedef enum
 } Arduino_digital_pin_e;
 
 #define LED_PIN ARDUINO_DIGITAL_PIN_9
+#define ARDUINO_ID_SIZE 10u
 
-static void
-init_gpio(Spi_pins_t *pins)
+/**
+ * SPICLK - PA9 - D8
+ * SPIMOSI - PB15 - H26
+ * SPIMISO - PC2 - Left header 35
+ * NSS - PB4 - D5
+ */
+static void init_gpio(Spi_pins_t *pins)
 {
     pins->clock.reg = GPIOA;
     pins->clock.pin_config.number = GPIO_PIN_9;
@@ -538,18 +540,21 @@ static void arduino_read_id(Spi_handle_t *spi, char id[], size_t length)
 {
     if (send_command(spi, COMMAND_ID_READ, NULL, 0u))
     {
-        read_dummy(spi);
-        delay();
-        send_dummy(spi);
-
-        spi->rx.data = (uint8_t *)id;
-        spi->rx.size = length;
-        Spi_receive(spi);
+        spi->rx.size = sizeof(uint8_t);
+        for (size_t i = 0u; i < length; i++)
+        {
+            send_dummy(spi);
+            spi->rx.data = (uint8_t *)&id[i];
+            Spi_receive(spi);
+        }
     }
 }
 
 int main()
 {
+    initialise_monitor_handles();
+
+    printf("hello man");
     Spi_pins_t gpio_spi = {0u};
     init_gpio(&gpio_spi);
 
@@ -576,9 +581,27 @@ int main()
         }
         delay();
 
-        read_analog(&spi, ARDUINO_ANALOG_PIN_0);
+        uint8_t value = read_analog(&spi, ARDUINO_ANALOG_PIN_0);
 
-        read_digital(&spi, LED_PIN);
+        while (GPIO_BUTTON_STATE_HIGH == Gpio_read_from_input_pin(&button))
+        {
+        }
+        delay();
+        value = read_digital(&spi, LED_PIN);
+
+        while (GPIO_BUTTON_STATE_HIGH == Gpio_read_from_input_pin(&button))
+        {
+        }
+        delay();
+        arduino_print(&spi, "hello Arduino");
+
+        while (GPIO_BUTTON_STATE_HIGH == Gpio_read_from_input_pin(&button))
+        {
+        }
+        delay();
+        char arduino_id[ARDUINO_ID_SIZE + 1u] = {'\0'};
+        arduino_read_id(&spi, arduino_id, sizeof(arduino_id));
+
         while (spi.reg->SR.BSY)
         {
         }

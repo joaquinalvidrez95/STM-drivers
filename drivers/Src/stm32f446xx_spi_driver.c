@@ -148,7 +148,7 @@ void Spi_receive(Spi_handle_t *handle)
 
     while (length > 0u)
     {
-        while (handle->reg->SR.RXNE)
+        while (!handle->reg->SR.RXNE)
         {
         }
 
