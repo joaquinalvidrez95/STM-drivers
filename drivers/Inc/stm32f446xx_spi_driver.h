@@ -101,8 +101,6 @@ void Spi_enable_ssi(Spi_reg_t *reg, bool enable);
 void Spi_enable_ssoe(Spi_reg_t *reg, bool enable);
 void Spi_send(Spi_handle_t *handle);
 void Spi_receive(Spi_handle_t *handle);
-// void Spi_send(Spi_reg_t *reg, uint8_t *data, size_t size);
-// void Spi_receive(Spi_reg_t *reg, uint8_t *data, size_t size);
 
 void Spi_config_irq(Irq_number_t irq_number, bool enable);
 void Spi_config_irq_priority(Irq_number_t irq_number, Nvic_irq_priority_t priority);

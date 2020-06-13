@@ -115,8 +115,8 @@ int main()
     Gpio_init(&button);
 
     /* Configures IRQ */
-    Gpio_config_irq_priority(irq_number_exti15_10, nvic_irq_priority_15);
-    Gpio_config_irq(irq_number_exti15_10, true);
+    Gpio_config_irq_priority(IRQ_NUMBER_EXTI15_10, NVIC_IRQ_PRIORITY_15);
+    Gpio_config_irq(IRQ_NUMBER_EXTI15_10, true);
 
     while (1)
         ;
