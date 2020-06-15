@@ -327,3 +327,21 @@ __attribute__((weak)) void Spi_on_app_event(Spi_handle_t *handle, Spi_event_e ev
 {
     /* weak implementation */
 }
+
+void Spi_read_dummy(Spi_handle_t *spi)
+{
+    /* Does dummy read to clear off the RXNE */
+    uint8_t dummy_read = 0u;
+    spi->rx.data = &dummy_read;
+    spi->rx.size = sizeof(dummy_read);
+    Spi_receive(spi);
+}
+
+void Spi_send_dummy(Spi_handle_t *spi)
+{
+    /* Sends some dummy bits to fetch the response from the slave */
+    uint8_t dummy_byte = 0xFFu;
+    spi->tx.data = &dummy_byte;
+    spi->tx.size = sizeof(dummy_byte);
+    Spi_send(spi);
+}

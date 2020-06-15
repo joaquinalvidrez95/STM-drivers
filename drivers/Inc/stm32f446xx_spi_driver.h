@@ -131,4 +131,7 @@ void Spi_close_reception(Spi_handle_t *handle);
 
 void Spi_on_app_event(Spi_handle_t *handle, Spi_event_e event);
 
+void Spi_read_dummy(Spi_handle_t *spi);
+void Spi_send_dummy(Spi_handle_t *spi);
+
 #endif /* INC_STM32F446XX_SPI_DRIVER_H_ */
