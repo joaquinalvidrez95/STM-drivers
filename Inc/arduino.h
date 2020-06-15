@@ -13,9 +13,9 @@
 
 typedef enum
 {
-    LED_STATUS_OFF = 0u,
-    LED_STATUS_ON = 1u
-} Led_status_e;
+    ARDUINO_DIGITAL_STATUS_OFF = 0u,
+    ARDUINO_DIGITAL_STATUS_ON = 1u
+} Arduino_digital_status_e;
 
 typedef enum
 {
@@ -28,12 +28,12 @@ typedef enum
 
 typedef enum
 {
-    COMMAND_LED_CTRL = 0x50u,
-    COMMAND_SENSOR_READ = 0x51u,
-    COMMAND_LED_READ = 0x52u,
-    COMMAND_PRINT = 0x53u,
-    COMMAND_ID_READ = 0x54,
-} Command_e;
+    ARDUINO_COMMAND_LED_CTRL = 0x50u,
+    ARDUINO_COMMAND_SENSOR_READ = 0x51u,
+    ARDUINO_COMMAND_LED_READ = 0x52u,
+    ARDUINO_COMMAND_PRINT = 0x53u,
+    ARDUINO_COMMAND_ID_READ = 0x54,
+} Arduino_command_e;
 
 typedef enum
 {
@@ -55,9 +55,9 @@ typedef enum
 
 #define ARDUINO_ID_SIZE 10u
 
-Led_status_e Arduino_read_digital(Spi_handle_t *spi, Arduino_digital_pin_e pin);
+Arduino_digital_status_e Arduino_read_digital(Spi_handle_t *spi, Arduino_digital_pin_e pin);
 
-void Arduino_write_led(Spi_handle_t *spi, Led_status_e status, Arduino_digital_pin_e pin);
+void Arduino_write_led(Spi_handle_t *spi, Arduino_digital_status_e status, Arduino_digital_pin_e pin);
 
 uint8_t Arduino_read_analog(Spi_handle_t *spi, Arduino_analog_pin_e pin);
 

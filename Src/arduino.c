@@ -25,7 +25,7 @@ static bool verify_response(Spi_handle_t *spi)
     return is_response_correct(ack_byte);
 }
 
-static bool send_command(Spi_handle_t *spi, Command_e command, uint8_t arguments[], size_t arguments_length)
+static bool send_command(Spi_handle_t *spi, Arduino_command_e command, uint8_t arguments[], size_t arguments_length)
 {
     /* Command 1 */
     spi->tx.data = (uint8_t *)&command;
@@ -47,10 +47,10 @@ static bool send_command(Spi_handle_t *spi, Command_e command, uint8_t arguments
     return result;
 }
 
-Led_status_e Arduino_read_digital(Spi_handle_t *spi, Arduino_digital_pin_e pin)
+Arduino_digital_status_e Arduino_read_digital(Spi_handle_t *spi, Arduino_digital_pin_e pin)
 {
-    Led_status_e read = 0u;
-    if (send_command(spi, COMMAND_LED_READ, (uint8_t *)&pin, sizeof(uint8_t)))
+    Arduino_digital_status_e read = 0u;
+    if (send_command(spi, ARDUINO_COMMAND_LED_READ, (uint8_t *)&pin, sizeof(uint8_t)))
     {
         Spi_read_dummy(spi);
         Utils_delay();
@@ -64,17 +64,17 @@ Led_status_e Arduino_read_digital(Spi_handle_t *spi, Arduino_digital_pin_e pin)
     return read;
 }
 
-void Arduino_write_led(Spi_handle_t *spi, Led_status_e status, Arduino_digital_pin_e pin)
+void Arduino_write_led(Spi_handle_t *spi, Arduino_digital_status_e status, Arduino_digital_pin_e pin)
 {
     uint8_t arguments[] = {(uint8_t)pin, (uint8_t)status};
-    send_command(spi, COMMAND_LED_CTRL, arguments, sizeof(arguments));
+    send_command(spi, ARDUINO_COMMAND_LED_CTRL, arguments, sizeof(arguments));
 }
 
 uint8_t Arduino_read_analog(Spi_handle_t *spi, Arduino_analog_pin_e pin)
 {
     uint8_t analog_read = 0u;
 
-    if (send_command(spi, COMMAND_SENSOR_READ, (uint8_t *)&pin, sizeof(uint8_t)))
+    if (send_command(spi, ARDUINO_COMMAND_SENSOR_READ, (uint8_t *)&pin, sizeof(uint8_t)))
     {
         Spi_read_dummy(spi);
         Utils_delay();
@@ -94,12 +94,12 @@ void Arduino_print(Spi_handle_t *spi, const char message[])
     size_t s = strlen(message);
     strcpy(new_message, (const char *)&s);
     strcat(new_message, message);
-    send_command(spi, COMMAND_PRINT, (uint8_t *)new_message, strlen(new_message));
+    send_command(spi, ARDUINO_COMMAND_PRINT, (uint8_t *)new_message, strlen(new_message));
 }
 
 void Arduino_read_id(Spi_handle_t *spi, char id[], size_t length)
 {
-    if (send_command(spi, COMMAND_ID_READ, NULL, 0u))
+    if (send_command(spi, ARDUINO_COMMAND_ID_READ, NULL, 0u))
     {
         spi->rx.size = sizeof(uint8_t);
         for (size_t i = 0u; i < length; i++)

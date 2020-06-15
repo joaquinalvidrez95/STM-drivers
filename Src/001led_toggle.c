@@ -409,7 +409,7 @@ int main()
 
         Spi_enable_peripheral(spi.reg, true);
 
-        Arduino_write_led(&spi, LED_STATUS_ON, LED_PIN);
+        Arduino_write_led(&spi, ARDUINO_DIGITAL_STATUS_ON, LED_PIN);
 
         while (GPIO_BUTTON_STATE_HIGH == Gpio_read_from_input_pin(&button))
         {
