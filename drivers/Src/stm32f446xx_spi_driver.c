@@ -7,11 +7,65 @@
 
 #include "stm32f446xx_spi_driver.h"
 
+static void Handle_txe_interrupt(Spi_handle_t *handle)
+{
+    if (handle->reg->CR1.DFF == SPI_DFF_8_BITS)
+    {
+        handle->reg->DR = *handle->tx.data;
+        handle->tx.size--;
+        handle->tx.data++;
+    }
+    else
+    {
+        handle->reg->DR = *((uint16_t *)handle->tx.data);
+        handle->tx.size -= 2u;
+        handle->tx.data += 2u;
+    }
+    if (!handle->tx.size)
+    {
+        /* Closes SPI Transmission */
+        Spi_close_transmission(handle);
+        Spi_on_app_event(handle, SPI_EVENT_TX_DONE);
+    }
+}
+
+static void Handle_rxne_interrupt(Spi_handle_t *handle)
+{
+    if (handle->reg->CR1.DFF == SPI_DFF_8_BITS)
+    {
+        *handle->rx.data = (uint8_t)handle->reg->DR;
+        handle->rx.size--;
+        handle->rx.data++;
+    }
+    else
+    {
+        *((uint16_t *)handle->rx.data) = (uint16_t)handle->reg->DR;
+        handle->rx.size -= 2u;
+        handle->rx.data += 2u;
+    }
+
+    if (!handle->rx.size)
+    {
+        /* Closes SPI reception */
+        Spi_close_reception(handle);
+        Spi_on_app_event(handle, SPI_EVENT_RX_DONE);
+    }
+}
+static void Handle_ovr_err_interrupt(Spi_handle_t *handle)
+{
+    /* Clears the OVR flag */
+    if (handle->tx.state != SPI_STATE_BUSY)
+    {
+        Spi_clear_ovr_flag(handle->reg);
+    }
+    Spi_on_app_event(handle, SPI_EVENT_OVR_ERR);
+}
+
 void Spi_init(Spi_handle_t *handle)
 {
     Spi_peripheral_clock_control(handle->reg, true);
 
-    handle->reg->CR1.MSTR = (uint8_t)handle->config.device_mode;
+    handle->reg->CR1.MSTR = (unsigned int)handle->config.device_mode;
 
     switch (handle->config.bus_config)
     {
@@ -121,7 +175,6 @@ void Spi_enable_ssoe(Spi_reg_t *reg, bool enable)
  */
 void Spi_send(Spi_handle_t *handle)
 {
-
     for (size_t i = handle->tx.size; i > 0u;)
     {
         while (!handle->reg->SR.TXE)
@@ -166,13 +219,111 @@ void Spi_receive(Spi_handle_t *handle)
         }
     }
 }
-
+/* TODO: Reuse code */
 void Spi_config_irq(Irq_number_t irq_number, bool enable)
 {
+    if (enable == true)
+    {
+        if (irq_number <= 31u)
+        {
+            *NVIC_ISER0 |= 1u << irq_number;
+        }
+        else if ((irq_number > 31u) && (irq_number < 64u))
+        {
+            *NVIC_ISER1 |= 1u << (irq_number % 32u);
+        }
+        else if ((irq_number >= 64u) && (irq_number < 96u))
+        {
+            *NVIC_ISER3 |= 1u << (irq_number % 64u);
+        }
+    }
+    else
+    {
+        if (irq_number <= 31u)
+        {
+            *NVIC_ICER0 |= 1u << irq_number;
+        }
+        else if ((irq_number > 31u) && (irq_number < 64u))
+        {
+            *NVIC_ICER1 |= 1u << (irq_number % 32u);
+        }
+        else if ((irq_number >= 64u) && (irq_number < 96u))
+        {
+            *NVIC_ICER3 |= 1u << (irq_number % 64u);
+        }
+    }
+}
+
+void Spi_send_interrupt(Spi_handle_t *handle)
+{
+    if (handle->tx.state != SPI_STATE_BUSY)
+    {
+        handle->tx.state = SPI_STATE_BUSY;
+        handle->reg->CR2.TXEIE = 1u;
+    }
+}
+void Spi_receive_interrupt(Spi_handle_t *handle)
+{
+    if (handle->rx.state != SPI_STATE_BUSY)
+    {
+        handle->tx.state = SPI_STATE_BUSY;
+        handle->reg->CR2.RXNEIE = 1u;
+    }
 }
 void Spi_config_irq_priority(Irq_number_t irq_number, Nvic_irq_priority_t priority)
 {
+    const uint8_t index = irq_number / 4u;
+    const uint8_t section = irq_number % 4u;
+    const uint8_t shift_amount = (8u * section) + (8u - NO_PR_BITS_IMPLEMENTED);
+    NVIC_PR_BASE_ADDR[index] |= (uint32_t)priority << shift_amount;
 }
-void Spi_irq_handling(Spi_handle_t pin)
+void Spi_handle_irq(Spi_handle_t *handle)
 {
+    if (handle->reg->SR.TXE && handle->reg->CR2.TXEIE)
+    {
+        /* handles TXE */
+        Handle_txe_interrupt(handle);
+    }
+
+    if (handle->reg->SR.RXNE && handle->reg->CR2.RXNEIE)
+    {
+        /* handles RXNE */
+        Handle_rxne_interrupt(handle);
+    }
+
+    if (handle->reg->SR.OVR && handle->reg->CR2.ERRIE)
+    {
+        /* handles OVR */
+        Handle_ovr_err_interrupt(handle);
+    }
+}
+
+void Spi_close_transmission(Spi_handle_t *handle)
+{
+    /* Closes SPI Transmission */
+    handle->reg->CR2.TXEIE = 0u;
+    handle->tx.data = NULL;
+    handle->tx.size = 0u;
+    handle->tx.state = SPI_STATE_READY;
+}
+
+void Spi_close_reception(Spi_handle_t *handle)
+{
+    /* Closes SPI reception */
+    handle->reg->CR2.RXNEIE = 0u;
+    handle->rx.data = NULL;
+    handle->rx.size = 0u;
+    handle->rx.state = SPI_STATE_READY;
+}
+
+void Spi_clear_ovr_flag(Spi_reg_t *reg)
+{
+    uint8_t tmp = reg->DR;
+    (void)reg->SR;
+    (void)tmp;
+}
+
+__attribute__((weak)) void Spi_on_app_event(Spi_handle_t *handle, Spi_event_e event)
+{
+    /* weak implementation */
 }

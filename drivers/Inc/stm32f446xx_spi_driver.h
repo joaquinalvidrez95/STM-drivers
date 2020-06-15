@@ -63,6 +63,20 @@ typedef enum
     SPI_SSM_ENABLED = 1u,
 } Spi_ssm_e;
 
+typedef enum
+{
+    SPI_STATE_READY,
+    SPI_STATE_BUSY,
+} Spi_state_e;
+
+typedef enum
+{
+    SPI_EVENT_TX_DONE,
+    SPI_EVENT_RX_DONE,
+    SPI_EVENT_OVR_ERR,
+    SPI_EVENT_CRC_ERR,
+} Spi_event_e;
+
 typedef struct
 {
     Spi_device_mode_e device_mode;
@@ -77,10 +91,11 @@ typedef struct
 typedef struct
 {
     /* TODO: Check if it can be const */
-    uint8_t *data; /* !< To store the app. Tx buffer address > */
-    size_t size;   /* !< To store Tx len > */
-    uint8_t state; /* !< To store Tx state > */
+    uint8_t *data;     /* !< To store the app. Tx buffer address > */
+    size_t size;       /* !< To store Tx len > */
+    Spi_state_e state; /* !< To store Tx state > */
 } Spi_buffer_t;
+
 /*
  *Handle structure for SPIx peripheral
  */
@@ -99,11 +114,21 @@ void Spi_peripheral_clock_control(Spi_reg_t *reg, bool enable);
 void Spi_enable_peripheral(Spi_reg_t *reg, bool enable);
 void Spi_enable_ssi(Spi_reg_t *reg, bool enable);
 void Spi_enable_ssoe(Spi_reg_t *reg, bool enable);
+
 void Spi_send(Spi_handle_t *handle);
 void Spi_receive(Spi_handle_t *handle);
 
+void Spi_send_interrupt(Spi_handle_t *handle);
+void Spi_receive_interrupt(Spi_handle_t *handle);
+
 void Spi_config_irq(Irq_number_t irq_number, bool enable);
 void Spi_config_irq_priority(Irq_number_t irq_number, Nvic_irq_priority_t priority);
-void Spi_irq_handling(Spi_handle_t pin);
+void Spi_handle_irq(Spi_handle_t *handle);
+
+void Spi_clear_ovr_flag(Spi_reg_t *reg);
+void Spi_close_transmission(Spi_handle_t *handle);
+void Spi_close_reception(Spi_handle_t *handle);
+
+void Spi_on_app_event(Spi_handle_t *handle, Spi_event_e event);
 
 #endif /* INC_STM32F446XX_SPI_DRIVER_H_ */

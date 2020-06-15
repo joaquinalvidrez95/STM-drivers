@@ -152,7 +152,7 @@ typedef struct
 		volatile unsigned int FRF : 1;
 		volatile unsigned int ERRIE : 1;
 		volatile unsigned int RXNEIE : 1;
-		volatile unsigned int TXNEIE : 1;
+		volatile unsigned int TXEIE : 1;
 		unsigned int reserved_1 : 24;
 	} CR2;
 

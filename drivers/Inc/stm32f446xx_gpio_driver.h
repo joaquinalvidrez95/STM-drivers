@@ -69,7 +69,7 @@ typedef enum
 typedef enum
 {
     GPIO_BUTTON_STATE_LOW = 0u,
-    GPIO_BUTTON_STATE_HIGH = 1u,    
+    GPIO_BUTTON_STATE_HIGH = 1u,
 } Gpio_button_state_e;
 
 typedef enum
