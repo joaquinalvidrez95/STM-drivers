@@ -170,7 +170,6 @@ typedef struct
 		unsigned int reserved : 23;
 	} SR;
 
-	// volatile uint32_t SR;
 	volatile uint32_t DR;
 	volatile uint32_t CRCPR;
 	volatile uint32_t RXCRCR;
@@ -178,6 +177,79 @@ typedef struct
 	volatile uint32_t I2SCFGR;
 	volatile uint32_t I2SPR;
 } Spi_reg_t;
+
+typedef struct
+{
+	volatile uint32_t CR1;
+	volatile uint32_t CR2;
+	volatile uint32_t OAR1;
+	volatile uint32_t OAR2;
+	volatile uint32_t DR;
+	volatile uint32_t SR1;
+	volatile uint32_t SR2;
+	volatile uint32_t CCR;
+	volatile uint32_t TRISE;
+	volatile uint32_t FLTR;
+} i2c_reg_t;
+
+typedef enum
+{
+	I2C_CR1_PE = 1u,
+	I2C_CR1_NOSTRETCH = 1u << 7u,
+	I2C_CR1_START = 1u << 8u,
+	I2C_CR1_STOP = 1u << 9u,
+	I2C_CR1_ACK = 1u << 10u,
+	I2C_CR1_POS = 1u << 11u,
+	I2C_CR1_PEC = 1u << 12u,
+	I2C_CR1_SWRST = 1u << 15u,
+} I2c_cr1_e;
+
+typedef enum
+{
+	I2C_CR2_FREQ = 0u,
+	I2C_CR2_ITERREN = 1u << 8u,
+	I2C_CR2_ITEVTEN = 1u << 9u,
+	I2C_CR2_ITBUFEN = 1u << 10u,
+} I2c_cr2_e;
+
+typedef enum
+{
+	I2C_OAR1_ADD0 = 0u,
+	I2C_OAR1_ADD71 = 1u << 1u,
+	I2C_OAR1_ADD98 = 1u << 8u,
+	I2C_OAR1_ADDMODE = 1u << 15u,
+} I2c_oar1_e;
+
+typedef enum
+{
+	I2C_SR1_SB = 1u << 0u,
+	I2C_SR1_ADDR = 1u << 1u,
+	I2C_SR1_BTF = 1u << 2u,
+	I2C_SR1_ADD10 = 1u << 3u,
+	I2C_SR1_STOPF = 1u << 4u,
+	I2C_SR1_RXNE = 1u << 6u,
+	I2C_SR1_TXE = 1u << 7u,
+	I2C_SR1_BERR = 1u << 8u,
+	I2C_SR1_ARLO = 1u << 9u,
+	I2C_SR1_AF = 1u << 10u,
+	I2C_SR1_OVR = 1u << 11u,
+	I2C_SR1_TIMEOUT = 1u << 14u,
+} I2c_sr1_e;
+typedef enum
+{
+	I2C_SR2_MSL = 1u << 0u,
+	I2C_SR2_BUSY = 1u << 1u,
+	I2C_SR2_TRA = 1u << 2u,
+	I2C_SR2_GENCALL = 1u << 4u,
+	I2C_SR2_DUALF = 1u << 7u,
+} I2c_sr2_e;
+
+typedef enum
+{
+	I2C_CCR_CCR = 1u << 0u,
+	I2C_CCR_DUTY = 1u << 14u,
+	I2C_CCR_FS = 1u << 15u,
+} I2c_ccr_e;
 
 typedef struct
 {
@@ -261,6 +333,10 @@ typedef struct
 #define SPI3 ((Spi_reg_t *)SPI3_BASEADDR)
 #define SPI4 ((Spi_reg_t *)SPI4_BASEADDR)
 
+#define I2C1 ((i2c_reg_t *)I2C1_BASEADDR)
+#define I2C2 ((i2c_reg_t *)I2C2_BASEADDR)
+#define I2C3 ((i2c_reg_t *)I2C3_BASEADDR)
+
 /** Enables GPIOx */
 #define GPIOA_PCLCK_EN() (RCC->AHBENR[0] |= (1u << 0u))
 #define GPIOB_PCLCK_EN() (RCC->AHBENR[0] |= (1u << 1u))
@@ -282,9 +358,16 @@ typedef struct
 #define GPIOH_PCLCK_DI() (RCC->AHBENR[0] &= ~(1u << 7u))
 
 /** Enables I2Cx */
-#define I2C1_PCLK_EN() (RCC->APBENR[0] |= (1u << 21u))
-#define I2C2_PCLK_EN() (RCC->APBENR[0] |= (1u << 22u))
-#define I2C3_PCLK_EN() (RCC->APBENR[0] |= (1u << 23u))
+#define I2C_PCLK_EN(X) (RCC->APBENR[0] |= (1u << X))
+#define I2C1_PCLK_EN() (I2C_PCLK_EN(21u))
+#define I2C2_PCLK_EN() (I2C_PCLK_EN(22u))
+#define I2C3_PCLK_EN() (I2C_PCLK_EN(23u))
+
+/** Disables I2Cx */
+#define I2C_PCLK_DI(X) (RCC->APBENR[0] &= ~(1u << X))
+#define I2C1_PCLK_DI(X) (I2C_PCLK_DI(21u))
+#define I2C2_PCLK_DI(X) (I2C_PCLK_DI(22u))
+#define I2C3_PCLK_DI(X) (I2C_PCLK_DI(23u))
 
 /** Enables SPIx */
 #define SPI1_PCLK_EN() (RCC->APBENR[1] |= (1u << 12u))
@@ -318,6 +401,13 @@ typedef enum
 	Gpio_reset_port_g,
 	Gpio_reset_port_h,
 } Gpio_reset_t;
+
+typedef enum
+{
+	I2C_RESET_1 = 1u << 21u,
+	I2C_RESET_2 = 1u << 22u,
+	I2C_RESET_3 = 1u << 23u,
+} I2c_reset_e;
 
 #define GPIOX_REG_RESET(port)                \
 	do                                       \
@@ -369,7 +459,5 @@ typedef enum
 
 #define SET ENABLE
 #define RESET DISABLE
-// #define GPIO_PIN_SET SET
-// #define GPIO_PIN_RESET RESET
 uint8_t Driver_gpio_address_to_code(Gpio_reg_t *);
 #endif /* INC_STM32F446XX_H_ */

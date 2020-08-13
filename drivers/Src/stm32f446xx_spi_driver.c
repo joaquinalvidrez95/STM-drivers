@@ -112,7 +112,6 @@ void Spi_deinit(Spi_reg_t *reg)
 
 void Spi_peripheral_clock_control(Spi_reg_t *reg, bool enable)
 {
-
     if (enable == true)
     {
         if (reg == SPI1)
