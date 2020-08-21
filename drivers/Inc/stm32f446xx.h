@@ -192,65 +192,6 @@ typedef struct
 	volatile uint32_t FLTR;
 } i2c_reg_t;
 
-typedef enum
-{
-	I2C_CR1_PE = 1u,
-	I2C_CR1_NOSTRETCH = 1u << 7u,
-	I2C_CR1_START = 1u << 8u,
-	I2C_CR1_STOP = 1u << 9u,
-	I2C_CR1_ACK = 1u << 10u,
-	I2C_CR1_POS = 1u << 11u,
-	I2C_CR1_PEC = 1u << 12u,
-	I2C_CR1_SWRST = 1u << 15u,
-} I2c_cr1_e;
-
-typedef enum
-{
-	I2C_CR2_FREQ = 0u,
-	I2C_CR2_ITERREN = 1u << 8u,
-	I2C_CR2_ITEVTEN = 1u << 9u,
-	I2C_CR2_ITBUFEN = 1u << 10u,
-} I2c_cr2_e;
-
-typedef enum
-{
-	I2C_OAR1_ADD0 = 0u,
-	I2C_OAR1_ADD71 = 1u << 1u,
-	I2C_OAR1_ADD98 = 1u << 8u,
-	I2C_OAR1_ADDMODE = 1u << 15u,
-} I2c_oar1_e;
-
-typedef enum
-{
-	I2C_SR1_SB = 1u << 0u,
-	I2C_SR1_ADDR = 1u << 1u,
-	I2C_SR1_BTF = 1u << 2u,
-	I2C_SR1_ADD10 = 1u << 3u,
-	I2C_SR1_STOPF = 1u << 4u,
-	I2C_SR1_RXNE = 1u << 6u,
-	I2C_SR1_TXE = 1u << 7u,
-	I2C_SR1_BERR = 1u << 8u,
-	I2C_SR1_ARLO = 1u << 9u,
-	I2C_SR1_AF = 1u << 10u,
-	I2C_SR1_OVR = 1u << 11u,
-	I2C_SR1_TIMEOUT = 1u << 14u,
-} I2c_sr1_e;
-typedef enum
-{
-	I2C_SR2_MSL = 1u << 0u,
-	I2C_SR2_BUSY = 1u << 1u,
-	I2C_SR2_TRA = 1u << 2u,
-	I2C_SR2_GENCALL = 1u << 4u,
-	I2C_SR2_DUALF = 1u << 7u,
-} I2c_sr2_e;
-
-typedef enum
-{
-	I2C_CCR_CCR = 1u << 0u,
-	I2C_CCR_DUTY = 1u << 14u,
-	I2C_CCR_FS = 1u << 15u,
-} I2c_ccr_e;
-
 typedef struct
 {
 	volatile uint32_t MODER;

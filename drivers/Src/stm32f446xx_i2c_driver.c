@@ -1,14 +1,87 @@
 #include "stm32f446xx_i2c_driver.h"
 
 #include <stdint.h>
+#include <stdbool.h>
 #include "stm32f446xx_rcc_driver.h"
 
-#define FAST_MODE (1u << 15u)
+#define CCR_FAST_STANDARD_MODE (1u << 15u)
 #define MASK_CCR (0xFFFu)
 #define BIT_POSITION_CCR_DUTY (14u)
 
+#define CR1_START (1u << 8u)
+#define CR1_STOP (1u << 9u)
+
+#define SR1_SB (1u << 0u)
+
+typedef enum
+{
+    I2C_CR1_PE = 1u,
+    I2C_CR1_NOSTRETCH = 1u << 7u,
+    I2C_CR1_ACK = 1u << 10u,
+    I2C_CR1_POS = 1u << 11u,
+    I2C_CR1_PEC = 1u << 12u,
+    I2C_CR1_SWRST = 1u << 15u,
+} I2c_cr1_e;
+
+typedef enum
+{
+    I2C_CR2_FREQ = 0u,
+    I2C_CR2_ITERREN = 1u << 8u,
+    I2C_CR2_ITEVTEN = 1u << 9u,
+    I2C_CR2_ITBUFEN = 1u << 10u,
+} I2c_cr2_e;
+
+typedef enum
+{
+    I2C_OAR1_ADD0 = 0u,
+    I2C_OAR1_ADD71 = 1u << 1u,
+    I2C_OAR1_ADD98 = 1u << 8u,
+    I2C_OAR1_ADDMODE = 1u << 15u,
+} I2c_oar1_e;
+
+#define SR1_ADDR (1u << 1u)
+#define SR1_BTF (1u << 2u)
+#define SR1_ADD10 (1u << 3u)
+#define SR1_STOPF (1u << 4u)
+#define SR1_RXNE (1u << 6u)
+#define SR1_TXE (1u << 7u)
+#define SR1_BERR (1u << 8u)
+#define SR1_ARLO (1u << 9u)
+#define SR1_AF (u << 10u)
+#define SR1_OVR (u << 11u)
+#define SR1_TIMEOUT (u << 14u)
+
+typedef enum
+{
+    I2C_SR2_MSL = 1u << 0u,
+    I2C_SR2_BUSY = 1u << 1u,
+    I2C_SR2_TRA = 1u << 2u,
+    I2C_SR2_GENCALL = 1u << 4u,
+    I2C_SR2_DUALF = 1u << 7u,
+} I2c_sr2_e;
+
+typedef enum
+{
+    I2C_CCR_CCR = 1u << 0u,
+    I2C_CCR_DUTY = 1u << 14u,
+} I2c_ccr_e;
+
+typedef enum
+{
+    ADDRESS_PHASE_READ,
+    ADDRESS_PHASE_WRITE,
+} address_phase_t;
+
 static inline void reset_register(uint32_t bit);
 static inline uint32_t calculate_ccr(const i2c_config_t *p_config, uint32_t pclk1);
+static inline void generate_start_condition(i2c_reg_t *p_reg);
+static inline void generate_stop_condition(i2c_reg_t *p_reg);
+static inline bool is_start_condition_generated(const i2c_reg_t *p_reg);
+static inline bool is_address_phase_done(const i2c_reg_t *p_reg);
+static inline void execute_address_phase(i2c_reg_t *p_reg, uint8_t slave_address, address_phase_t operation);
+static inline void clear_addr(const i2c_reg_t *p_reg);
+static inline bool is_data_register_empty(const i2c_reg_t *p_reg);
+static inline bool is_byte_transfer_finished(const i2c_reg_t *p_reg);
 
 void i2c_init(i2c_handle_t *p_handle)
 {
@@ -26,9 +99,41 @@ void i2c_init(i2c_handle_t *p_handle)
 
     /* Clock Control Register (CCR) */
     p_handle->p_reg->CCR = calculate_ccr(&p_handle->config, pclk1);
-
-    
 }
+
+void i2c_send_as_master(i2c_handle_t *p_handle, const i2c_message_t *p_message)
+{
+    generate_start_condition(p_handle->p_reg);
+
+    while (!is_start_condition_generated(p_handle->p_reg))
+    {
+    }
+
+    execute_address_phase(p_handle->p_reg, p_message->slave_address, ADDRESS_PHASE_WRITE);
+
+    while (!is_address_phase_done(p_handle->p_reg))
+    {
+    }
+
+    clear_addr(p_handle->p_reg);
+
+    for (uint8_t data_idx = 0u; data_idx < p_message->size; data_idx++)
+    {
+        while (!is_data_register_empty(p_handle->p_reg))
+        {
+            p_handle->p_reg->DR = p_message->buffer[data_idx];
+        }
+    }
+
+    while (!is_data_register_empty(p_handle->p_reg))
+    {
+    }
+
+    while (!is_byte_transfer_finished(p_handle->p_reg))
+    {
+    }
+}
+
 void i2c_enable_peripheral_clock(i2c_reg_t *p_reg, bool enable)
 {
     if (enable == true)
@@ -112,9 +217,63 @@ static inline uint32_t calculate_ccr(const i2c_config_t *p_config, uint32_t pclk
     {
         const uint32_t divisor = p_config->fm_duty_cycle == I2C_DUTY_2 ? 3u : 25u;
         ccr = (pclk1 / divisor / p_config->scl_speed) & MASK_CCR;
-        ccr |= FAST_MODE;
+        ccr |= CCR_FAST_STANDARD_MODE;
         ccr |= (uint32_t)p_config->fm_duty_cycle << BIT_POSITION_CCR_DUTY;
     }
 
     return ccr;
+}
+
+static inline void generate_start_condition(i2c_reg_t *p_reg)
+{
+    p_reg->CR1 |= CR1_START;
+}
+
+static inline void generate_stop_condition(i2c_reg_t *p_reg)
+{
+    p_reg->CR1 |= CR1_STOP;
+}
+
+static inline bool is_start_condition_generated(const i2c_reg_t *p_reg)
+{
+    return (p_reg->SR1 & SR1_SB) == SR1_SB;
+}
+
+static inline void execute_address_phase(i2c_reg_t *p_reg, uint8_t slave_address, address_phase_t operation)
+{
+    switch (operation)
+    {
+    case ADDRESS_PHASE_READ:
+        p_reg->DR = (slave_address << 1u) | 1u;
+        break;
+
+    case ADDRESS_PHASE_WRITE:
+        p_reg->DR = (slave_address << 1u) & (uint8_t)(~1u);
+        break;
+
+    default:
+        break;
+    }
+}
+
+static inline bool is_address_phase_done(const i2c_reg_t *p_reg)
+{
+    return (p_reg->SR1 & SR1_ADDR) == SR1_ADDR;
+}
+
+static inline void clear_addr(const i2c_reg_t *p_reg)
+{
+    uint32_t dummy_read = p_reg->SR1;
+    dummy_read = p_reg->SR2;
+    (void)dummy_read;
+}
+
+static inline bool is_data_register_empty(const i2c_reg_t *p_reg)
+{
+    return (p_reg->SR1 & SR1_TXE) == SR1_TXE;
+}
+
+static inline bool is_byte_transfer_finished(const i2c_reg_t *p_reg)
+{
+    return (p_reg->SR1 & SR1_BTF) == SR1_BTF;
 }
