@@ -70,7 +70,7 @@ typedef enum
 } address_phase_t;
 
 static inline void reset_register(uint32_t bit);
-static inline uint32_t calculate_ccr(const i2c_config_t *p_config, uint32_t pclk1);
+static inline uint16_t calculate_ccr(const i2c_cfg_t *p_cfg, uint32_t pclk1);
 static inline void generate_start_condition(i2c_reg_t *p_reg);
 static inline void generate_stop_condition(i2c_reg_t *p_reg);
 static inline bool is_start_condition_generated(const i2c_reg_t *p_reg);
@@ -79,23 +79,25 @@ static inline void execute_address_phase(i2c_reg_t *p_reg, uint8_t slave_address
 static inline void clear_addr(const i2c_reg_t *p_reg);
 static inline bool is_data_register_empty(const i2c_reg_t *p_reg);
 static inline bool is_byte_transfer_finished(const i2c_reg_t *p_reg);
+static inline uint16_t calculate_rise_time(const i2c_cfg_t *p_cfg, uint32_t pclk1);
 
 void i2c_init(i2c_handle_t *p_handle)
 {
     /* Configures ACK control bit */
-    p_handle->p_reg->CR1 |= (uint8_t)p_handle->config.ack_control << 10u;
+    p_handle->p_reg->CR1 |= (uint8_t)p_handle->cfg.ack_control << 10u;
 
     const uint32_t pclk1 = rcc_get_pclk1();
 
     /* Configures FREQ */
-    p_handle->p_reg->CR2 = (pclk1 / 1000000u) & 0b111111u;
+    p_handle->p_reg->CR2 = (uint16_t)(pclk1 / 1000000u) & 0b111111u;
 
     /* Configures device address */
     p_handle->p_reg->OAR1 |= 1u << 14u;
-    p_handle->p_reg->OAR1 |= (uint8_t)p_handle->config.device_address << 1u;
+    p_handle->p_reg->OAR1 |= (uint8_t)p_handle->cfg.device_address << 1u;
 
     /* Clock Control Register (CCR) */
-    p_handle->p_reg->CCR = calculate_ccr(&p_handle->config, pclk1);
+    p_handle->p_reg->CCR = calculate_ccr(&p_handle->cfg, pclk1);
+    p_handle->p_reg->TRISE = calculate_rise_time(&p_handle->cfg, pclk1);
 }
 
 void i2c_send_as_master(i2c_handle_t *p_handle, const i2c_message_t *p_message)
@@ -169,11 +171,11 @@ void i2c_enable_peripheral(i2c_reg_t *p_reg, bool enable)
 {
     if (enable)
     {
-        p_reg->CR1 |= (uint32_t)CR1_PE;
+        p_reg->CR1 |= (uint16_t)CR1_PE;
     }
     else
     {
-        p_reg->CR1 &= ~((uint32_t)CR1_PE);
+        p_reg->CR1 &= ~((uint16_t)CR1_PE);
     }
 }
 
@@ -202,20 +204,20 @@ static inline void reset_register(uint32_t bit)
     RCC->APB_RSTR[0] &= ~bit;
 }
 
-static inline uint32_t calculate_ccr(const i2c_config_t *p_config, uint32_t pclk1)
+static inline uint16_t calculate_ccr(const i2c_cfg_t *p_cfg, uint32_t pclk1)
 {
-    uint32_t ccr = 0u;
+    uint16_t ccr = 0u;
 
-    if ((uint32_t)I2C_SCL_SPEED_STANDARD_MODE >= (uint32_t)p_config->scl_speed)
+    if ((uint32_t)I2C_SCL_SPEED_STANDARD_MODE >= (uint32_t)p_cfg->scl_speed)
     {
-        ccr = (pclk1 / 2u / (uint32_t)p_config->scl_speed) & MASK_CCR;
+        ccr = (uint16_t)((pclk1 / 2u / (uint32_t)p_cfg->scl_speed) & MASK_CCR);
     }
     else
     {
-        const uint32_t divisor = p_config->fm_duty_cycle == I2C_DUTY_2 ? 3u : 25u;
-        ccr = (pclk1 / divisor / p_config->scl_speed) & MASK_CCR;
+        const uint32_t divisor = p_cfg->fm_duty_cycle == I2C_DUTY_2 ? 3u : 25u;
+        ccr = (uint16_t)((pclk1 / divisor / p_cfg->scl_speed) & MASK_CCR);
         ccr |= CCR_FAST_STANDARD_MODE;
-        ccr |= (uint32_t)p_config->fm_duty_cycle << BIT_POSITION_CCR_DUTY;
+        ccr |= (uint16_t)p_cfg->fm_duty_cycle << BIT_POSITION_CCR_DUTY;
     }
 
     return ccr;
@@ -260,7 +262,7 @@ static inline bool is_address_phase_done(const i2c_reg_t *p_reg)
 
 static inline void clear_addr(const i2c_reg_t *p_reg)
 {
-    uint32_t dummy_read = p_reg->SR1;
+    uint16_t dummy_read = p_reg->SR1;
     dummy_read = p_reg->SR2;
     (void)dummy_read;
 }
@@ -273,4 +275,18 @@ static inline bool is_data_register_empty(const i2c_reg_t *p_reg)
 static inline bool is_byte_transfer_finished(const i2c_reg_t *p_reg)
 {
     return (p_reg->SR1 & SR1_BTF) == SR1_BTF;
+}
+
+static inline uint16_t calculate_rise_time(const i2c_cfg_t *p_cfg, uint32_t pclk1)
+{
+    uint16_t rise_time_reg = 0u;
+    if ((uint32_t)I2C_SCL_SPEED_STANDARD_MODE >= (uint32_t)p_cfg->scl_speed)
+    {
+        rise_time_reg = (uint16_t)(pclk1 / 1000000u) + 1u;
+    }
+    else
+    {
+        rise_time_reg = (uint16_t)(pclk1 * 3u / 10000000u) + 1u;
+    }
+    return rise_time_reg & 0x3Fu;
 }

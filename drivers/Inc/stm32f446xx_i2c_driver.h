@@ -31,12 +31,12 @@ typedef struct
     uint8_t device_address;
     i2c_ack_control_t ack_control;
     i2c_fm_duty_t fm_duty_cycle;
-} i2c_config_t;
+} i2c_cfg_t;
 
 typedef struct
 {
     i2c_reg_t *p_reg;
-    i2c_config_t config;
+    i2c_cfg_t cfg;
 } i2c_handle_t;
 
 /**

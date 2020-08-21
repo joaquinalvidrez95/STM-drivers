@@ -180,16 +180,26 @@ typedef struct
 
 typedef struct
 {
-	volatile uint32_t CR1;
-	volatile uint32_t CR2;
-	volatile uint32_t OAR1;
-	volatile uint32_t OAR2;
-	volatile uint32_t DR;
-	volatile uint32_t SR1;
-	volatile uint32_t SR2;
-	volatile uint32_t CCR;
-	volatile uint32_t TRISE;
-	volatile uint32_t FLTR;
+	volatile uint16_t CR1;
+	uint16_t unused_0;
+	volatile uint16_t CR2;
+	uint16_t unused_1;
+	volatile uint16_t OAR1;
+	uint16_t unused_2;
+	volatile uint16_t OAR2;
+	uint16_t unused_3;
+	volatile uint16_t DR;
+	uint16_t unused_4;
+	volatile uint16_t SR1;
+	uint16_t unused_5;
+	volatile uint16_t SR2;
+	uint16_t unused_6;
+	volatile uint16_t CCR;
+	uint16_t unused_7;
+	volatile uint16_t TRISE;
+	uint16_t unused_8;
+	volatile uint16_t FLTR;
+	uint16_t unused_9;
 } i2c_reg_t;
 
 typedef struct

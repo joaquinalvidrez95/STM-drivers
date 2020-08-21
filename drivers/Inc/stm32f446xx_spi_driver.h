@@ -102,7 +102,7 @@ typedef struct
 typedef struct
 {
     Spi_reg_t *reg; /*!< This holds the base address of SPIx(x:0,1,2) peripheral >*/
-    Spi_config_t config;
+    Spi_config_t cfg;
     Spi_buffer_t tx;
     Spi_buffer_t rx;
 } Spi_handle_t;

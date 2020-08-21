@@ -65,9 +65,9 @@ void Spi_init(Spi_handle_t *handle)
 {
     Spi_peripheral_clock_control(handle->reg, true);
 
-    handle->reg->CR1.MSTR = (unsigned int)handle->config.device_mode;
+    handle->reg->CR1.MSTR = (unsigned int)handle->cfg.device_mode;
 
-    switch (handle->config.bus_config)
+    switch (handle->cfg.bus_config)
     {
     case SPI_BUS_CONFIG_FULL_DUPLEX:
         handle->reg->CR1.BIDIMODE = 0u;
@@ -84,11 +84,11 @@ void Spi_init(Spi_handle_t *handle)
         break;
     }
 
-    handle->reg->CR1.BR = (uint8_t)handle->config.sclk_speed;
-    handle->reg->CR1.DFF = (uint8_t)handle->config.DFF;
-    handle->reg->CR1.CPOL = (uint8_t)handle->config.CPOL;
-    handle->reg->CR1.CPHA = (uint8_t)handle->config.CPHA;
-    handle->reg->CR1.SSM = (uint8_t)handle->config.SSM;
+    handle->reg->CR1.BR = (uint8_t)handle->cfg.sclk_speed;
+    handle->reg->CR1.DFF = (uint8_t)handle->cfg.DFF;
+    handle->reg->CR1.CPOL = (uint8_t)handle->cfg.CPOL;
+    handle->reg->CR1.CPHA = (uint8_t)handle->cfg.CPHA;
+    handle->reg->CR1.SSM = (uint8_t)handle->cfg.SSM;
 }
 void Spi_deinit(Spi_reg_t *reg)
 {

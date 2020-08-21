@@ -172,13 +172,13 @@ static void init_gpio(Spi_pins_t *pins)
 void init_spi(Spi_handle_t *handle)
 {
     handle->reg = SPI1;
-    handle->config.device_mode = SPI_DEVICE_MODE_MASTER;
-    handle->config.bus_config = SPI_BUS_CONFIG_FULL_DUPLEX;
-    handle->config.sclk_speed = SPI_CLOCK_SPEED_DIV_2;
-    handle->config.DFF = SPI_DFF_8_BITS;
-    handle->config.CPOL = SPI_CPOL_LOW;
-    handle->config.CPHA = SPI_CPHA_LOW;
-    handle->config.SSM = SPI_SSM_ENABLED;
+    handle->cfg.device_mode = SPI_DEVICE_MODE_MASTER;
+    handle->cfg.bus_config = SPI_BUS_CONFIG_FULL_DUPLEX;
+    handle->cfg.sclk_speed = SPI_CLOCK_SPEED_DIV_2;
+    handle->cfg.DFF = SPI_DFF_8_BITS;
+    handle->cfg.CPOL = SPI_CPOL_LOW;
+    handle->cfg.CPHA = SPI_CPHA_LOW;
+    handle->cfg.SSM = SPI_SSM_ENABLED;
 
     Spi_init(handle);
 }
@@ -248,13 +248,13 @@ static void init_gpio(Spi_pins_t *pins)
 void init_spi(Spi_handle_t *handle)
 {
     handle->reg = SPI2;
-    handle->config.device_mode = SPI_DEVICE_MODE_MASTER;
-    handle->config.bus_config = SPI_BUS_CONFIG_FULL_DUPLEX;
-    handle->config.sclk_speed = SPI_CLOCK_SPEED_DIV_8;
-    handle->config.DFF = SPI_DFF_8_BITS;
-    handle->config.CPOL = SPI_CPOL_LOW;
-    handle->config.CPHA = SPI_CPHA_LOW;
-    handle->config.SSM = SPI_SSM_DISABLED;
+    handle->cfg.device_mode = SPI_DEVICE_MODE_MASTER;
+    handle->cfg.bus_config = SPI_BUS_CONFIG_FULL_DUPLEX;
+    handle->cfg.sclk_speed = SPI_CLOCK_SPEED_DIV_8;
+    handle->cfg.DFF = SPI_DFF_8_BITS;
+    handle->cfg.CPOL = SPI_CPOL_LOW;
+    handle->cfg.CPHA = SPI_CPHA_LOW;
+    handle->cfg.SSM = SPI_SSM_DISABLED;
 
     Spi_init(handle);
 }
@@ -364,13 +364,13 @@ static void init_gpio(Spi_pins_t *pins)
 void init_spi(Spi_handle_t *handle)
 {
     handle->reg = SPI2;
-    handle->config.device_mode = SPI_DEVICE_MODE_MASTER;
-    handle->config.bus_config = SPI_BUS_CONFIG_FULL_DUPLEX;
-    handle->config.sclk_speed = SPI_CLOCK_SPEED_DIV_8;
-    handle->config.DFF = SPI_DFF_8_BITS;
-    handle->config.CPOL = SPI_CPOL_LOW;
-    handle->config.CPHA = SPI_CPHA_LOW;
-    handle->config.SSM = SPI_SSM_DISABLED;
+    handle->cfg.device_mode = SPI_DEVICE_MODE_MASTER;
+    handle->cfg.bus_config = SPI_BUS_CONFIG_FULL_DUPLEX;
+    handle->cfg.sclk_speed = SPI_CLOCK_SPEED_DIV_8;
+    handle->cfg.DFF = SPI_DFF_8_BITS;
+    handle->cfg.CPOL = SPI_CPOL_LOW;
+    handle->cfg.CPHA = SPI_CPHA_LOW;
+    handle->cfg.SSM = SPI_SSM_DISABLED;
 
     Spi_init(handle);
 }
