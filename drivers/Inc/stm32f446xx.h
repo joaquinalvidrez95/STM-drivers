@@ -203,7 +203,7 @@ typedef struct
 	volatile uint32_t BSRR;
 	volatile uint32_t LCKR;
 	volatile uint32_t AFR[2];
-} Gpio_reg_t;
+} gpio_reg_t;
 
 typedef struct
 {
@@ -255,14 +255,14 @@ typedef struct
 	volatile uint32_t CFGR;
 } Syscfg_reg_t;
 
-#define GPIOA ((Gpio_reg_t *const)GPIOA_BASEADDR)
-#define GPIOB ((Gpio_reg_t *const)GPIOB_BASEADDR)
-#define GPIOC ((Gpio_reg_t *const)GPIOC_BASEADDR)
-#define GPIOD ((Gpio_reg_t *const)GPIOD_BASEADDR)
-#define GPIOE ((Gpio_reg_t *const)GPIOE_BASEADDR)
-#define GPIOF ((Gpio_reg_t *const)GPIOF_BASEADDR)
-#define GPIOG ((Gpio_reg_t *const)GPIOG_BASEADDR)
-#define GPIOH ((Gpio_reg_t *const)GPIOH_BASEADDR)
+#define GPIOA ((gpio_reg_t *const)GPIOA_BASEADDR)
+#define GPIOB ((gpio_reg_t *const)GPIOB_BASEADDR)
+#define GPIOC ((gpio_reg_t *const)GPIOC_BASEADDR)
+#define GPIOD ((gpio_reg_t *const)GPIOD_BASEADDR)
+#define GPIOE ((gpio_reg_t *const)GPIOE_BASEADDR)
+#define GPIOF ((gpio_reg_t *const)GPIOF_BASEADDR)
+#define GPIOG ((gpio_reg_t *const)GPIOG_BASEADDR)
+#define GPIOH ((gpio_reg_t *const)GPIOH_BASEADDR)
 
 #define RCC ((Rcc_reg_t *)RCC_BASEADDR)
 #define EXTI ((Exti_reg_t *)EXTI_BASEADDR)
@@ -392,13 +392,7 @@ typedef enum
 	En_status_enable = 1u
 } En_status_t;
 
-typedef enum
-{
-	Gpio_pin_status_reset = 0u,
-	Gpio_pin_status_set = 1u,
-} Gpio_pin_status_t;
-
 #define SET ENABLE
 #define RESET DISABLE
-uint8_t Driver_gpio_address_to_code(Gpio_reg_t *);
+uint8_t Driver_gpio_address_to_code(gpio_reg_t *);
 #endif /* INC_STM32F446XX_H_ */

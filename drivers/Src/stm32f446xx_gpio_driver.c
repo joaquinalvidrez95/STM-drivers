@@ -13,9 +13,9 @@
  * 
  * @param handle 
  */
-void Gpio_init(Gpio_handle_t *handle)
+void gpio_init(gpio_handle_t *handle)
 {
-    Gpio_peripheral_clock_control(handle->reg, true);
+    gpio_peripheral_clock_control(handle->reg, true);
 
     /* TODO: Check if memset */
     /* Configures mode. */
@@ -82,7 +82,7 @@ void Gpio_init(Gpio_handle_t *handle)
  * 
  * @param gpiox 
  */
-void Gpio_deinit(Gpio_reg_t *reg)
+void gpio_deinit(gpio_reg_t *reg)
 {
     Gpio_reset_t port = Gpio_reset_port_a;
 
@@ -126,7 +126,7 @@ void Gpio_deinit(Gpio_reg_t *reg)
  * @param gpiox 
  * @param enable 
  */
-void Gpio_peripheral_clock_control(Gpio_reg_t *reg, bool enable)
+void gpio_peripheral_clock_control(gpio_reg_t *reg, bool enable)
 {
     if (enable == En_status_enable)
     {
@@ -205,11 +205,11 @@ void Gpio_peripheral_clock_control(Gpio_reg_t *reg, bool enable)
  * 
  * @param reg 
  * @param pin 
- * @return Gpio_button_state_e 
+ * @return gpio_button_state_t 
  */
-Gpio_button_state_e Gpio_read_from_input_pin(Gpio_handle_t *handle)
+gpio_button_state_t gpio_read_pin(gpio_handle_t *handle)
 {
-    return (Gpio_button_state_e)((handle->reg->IDR >> handle->pin_config.number) & 0x00000001u);
+    return (gpio_button_state_t)((handle->reg->IDR >> handle->pin_config.number) & 0x00000001u);
 }
 
 /**
@@ -218,7 +218,7 @@ Gpio_button_state_e Gpio_read_from_input_pin(Gpio_handle_t *handle)
  * @param reg 
  * @return uint16_t 
  */
-uint16_t Gpio_read_from_input_port(Gpio_reg_t *reg)
+uint16_t gpio_read_port(gpio_reg_t *reg)
 {
     return (uint16_t)(reg->IDR);
 }
@@ -229,9 +229,9 @@ uint16_t Gpio_read_from_input_port(Gpio_reg_t *reg)
  * @param handle 
  * @param value 
  */
-void Gpio_write_to_pin(Gpio_handle_t *handle, Gpio_pin_status_t value)
+void gpio_write_to_pin(gpio_handle_t *handle, gpio_pin_status_t value)
 {
-    if (value == Gpio_pin_status_set)
+    if (value == GPIO_PIN_STATUS_SET)
     {
         handle->reg->ODR |= 1 << handle->pin_config.number;
     }
@@ -247,7 +247,7 @@ void Gpio_write_to_pin(Gpio_handle_t *handle, Gpio_pin_status_t value)
  * @param gpiox 
  * @param value 
  */
-void Gpio_write_to_output_port(Gpio_reg_t *reg, uint16_t value)
+void gpio_write_to_output_port(gpio_reg_t *reg, uint16_t value)
 {
     reg->ODR = value;
 }
@@ -258,7 +258,7 @@ void Gpio_write_to_output_port(Gpio_reg_t *reg, uint16_t value)
  * @param gpiox 
  * @param pin 
  */
-void Gpio_toggle_pin(Gpio_handle_t *handle)
+void gpio_toggle_pin(gpio_handle_t *handle)
 {
     handle->reg->ODR ^= 1u << handle->pin_config.number;
 }
@@ -270,7 +270,7 @@ void Gpio_toggle_pin(Gpio_handle_t *handle)
  * @param priority 
  * @param enable 
  */
-void Gpio_config_irq(Irq_number_t irq_number, bool enable)
+void gpio_config_irq(Irq_number_t irq_number, bool enable)
 {
     if (enable == true)
     {
@@ -304,7 +304,7 @@ void Gpio_config_irq(Irq_number_t irq_number, bool enable)
     }
 }
 
-void Gpio_config_irq_priority(Irq_number_t irq_number, Nvic_irq_priority_t priority)
+void gpio_config_irq_priority(Irq_number_t irq_number, Nvic_irq_priority_t priority)
 {
     const uint8_t index = irq_number / 4u;
     const uint8_t section = irq_number % 4u;
@@ -317,7 +317,7 @@ void Gpio_config_irq_priority(Irq_number_t irq_number, Nvic_irq_priority_t prior
  * 
  * @param pin 
  */
-void Gpio_irq_handling(Gpio_pin_e pin)
+void gpio_irq_handling(gpio_pin_t pin)
 {
     if (EXTI->PR & (1 << pin))
     {

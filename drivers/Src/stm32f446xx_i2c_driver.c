@@ -13,15 +13,12 @@
 
 #define SR1_SB (1u << 0u)
 
-typedef enum
-{
-    I2C_CR1_PE = 1u,
-    I2C_CR1_NOSTRETCH = 1u << 7u,
-    I2C_CR1_ACK = 1u << 10u,
-    I2C_CR1_POS = 1u << 11u,
-    I2C_CR1_PEC = 1u << 12u,
-    I2C_CR1_SWRST = 1u << 15u,
-} I2c_cr1_e;
+#define CR1_PE (1u)
+#define CR1_NOSTRETCH (1u << 7u)
+#define CR1_ACK (1u << 10u)
+#define CR1_POS (1u << 11u)
+#define CR1_PEC (1u << 12u)
+#define CR1_SWRST (1u << 15u)
 
 typedef enum
 {
@@ -172,11 +169,11 @@ void i2c_enable_peripheral(i2c_reg_t *p_reg, bool enable)
 {
     if (enable)
     {
-        p_reg->CR1 |= (uint32_t)I2C_CR1_PE;
+        p_reg->CR1 |= (uint32_t)CR1_PE;
     }
     else
     {
-        p_reg->CR1 &= ~((uint32_t)I2C_CR1_PE);
+        p_reg->CR1 &= ~((uint32_t)CR1_PE);
     }
 }
 

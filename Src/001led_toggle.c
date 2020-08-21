@@ -33,7 +33,7 @@ extern void initialise_monitor_handles();
 
 int main()
 {
-    Gpio_handle_t led;
+    gpio_handle_t led;
     led.reg = GPIOA;
     led.pin_config.number = GPIO_PIN_5;
     led.pin_config.mode = GPIO_MODE_OUT;
@@ -41,12 +41,12 @@ int main()
     led.pin_config.out_type = GPIO_OUT_TYPE_PUSH_PULL;
     led.pin_config.pull_mode = GPIO_PULL_MODE_NONE;
 
-    Gpio_peripheral_clock_control(led.reg, En_status_enable);
-    Gpio_init(&led);
+    gpio_peripheral_clock_control(led.reg, En_status_enable);
+    gpio_init(&led);
 
     while (1)
     {
-        Gpio_toggle_pin(&led);
+        gpio_toggle_pin(&led);
         Utils_delay();
     }
 
@@ -56,7 +56,7 @@ int main()
 #elif MAIN == MAIN_002_LED_BUTTON
 int main()
 {
-    Gpio_handle_t led;
+    gpio_handle_t led;
     led.reg = GPIOA;
     led.pin_config.number = Gpio_pin_5;
     led.pin_config.mode = GPIO_MODE_OUT;
@@ -64,33 +64,33 @@ int main()
     led.pin_config.out_type = GPIO_OUT_TYPE_PUSH_PULL;
     led.pin_config.pull_mode = GPIO_PULL_MODE_NONE;
 
-    Gpio_peripheral_clock_control(led.reg, true);
-    Gpio_init(&led);
+    gpio_peripheral_clock_control(led.reg, true);
+    gpio_init(&led);
 
-    Gpio_handle_t button;
+    gpio_handle_t button;
     button.reg = GPIOC;
     button.pin_config.number = GPIO_PIN_13;
     button.pin_config.mode = GPIO_MODE_IN;
     button.pin_config.speed = GPIO_SPEED_FAST;
     button.pin_config.pull_mode = GPIO_PULL_MODE_NONE;
 
-    Gpio_peripheral_clock_control(button.reg, true);
-    Gpio_init(&button);
+    gpio_peripheral_clock_control(button.reg, true);
+    gpio_init(&button);
 
     while (1)
     {
-        if (GPIO_BUTTON_STATE_LOW == Gpio_read_from_input_pin(&button))
+        if (GPIO_BUTTON_STATE_LOW == gpio_read_pin(&button))
         {
             Utils_delay();
-            Gpio_toggle_pin(&led);
+            gpio_toggle_pin(&led);
         }
     }
 
     return 0;
 }
 #elif MAIN == MAIN_005_BUTTTON_INTERRUPT
-static Gpio_handle_t button = {0u};
-static Gpio_handle_t led = {0u};
+static gpio_handle_t button = {0u};
+static gpio_handle_t led = {0u};
 int main()
 {
     led.reg = GPIOA;
@@ -100,8 +100,8 @@ int main()
     led.pin_config.out_type = GPIO_OUT_TYPE_PUSH_PULL;
     led.pin_config.pull_mode = GPIO_PULL_MODE_NONE;
 
-    Gpio_peripheral_clock_control(led.reg, true);
-    Gpio_init(&led);
+    gpio_peripheral_clock_control(led.reg, true);
+    gpio_init(&led);
 
     button.reg = GPIOC;
     button.pin_config.number = GPIO_PIN_13;
@@ -109,12 +109,12 @@ int main()
     button.pin_config.speed = GPIO_SPEED_FAST;
     button.pin_config.pull_mode = GPIO_PULL_MODE_NONE;
 
-    Gpio_peripheral_clock_control(button.reg, true);
-    Gpio_init(&button);
+    gpio_peripheral_clock_control(button.reg, true);
+    gpio_init(&button);
 
     /* Configures IRQ */
-    Gpio_config_irq_priority(IRQ_NUMBER_EXTI15_10, NVIC_IRQ_PRIORITY_15);
-    Gpio_config_irq(IRQ_NUMBER_EXTI15_10, true);
+    gpio_config_irq_priority(IRQ_NUMBER_EXTI15_10, NVIC_IRQ_PRIORITY_15);
+    gpio_config_irq(IRQ_NUMBER_EXTI15_10, true);
 
     while (1)
         ;
@@ -125,8 +125,8 @@ int main()
 void EXTI15_10_IRQHandler()
 {
     Utils_delay();
-    Gpio_irq_handling(button.pin_config.number);
-    Gpio_toggle_pin(&led);
+    gpio_irq_handling(button.pin_config.number);
+    gpio_toggle_pin(&led);
 }
 #elif MAIN == MAIN_006_SPI_SEND
 /**
@@ -137,9 +137,9 @@ void EXTI15_10_IRQHandler()
 
 typedef struct
 {
-    Gpio_handle_t clock;
-    Gpio_handle_t mosi;
-    Gpio_handle_t nss;
+    gpio_handle_t clock;
+    gpio_handle_t mosi;
+    gpio_handle_t nss;
 } Spi_pins_t;
 
 static void init_gpio(Spi_pins_t *pins)
@@ -150,7 +150,7 @@ static void init_gpio(Spi_pins_t *pins)
     pins->clock.pin_config.alt_fun_mode = GPIO_ALTERNATE_FUNCTION_5;
     pins->clock.pin_config.out_type = GPIO_OUT_TYPE_PUSH_PULL;
     pins->clock.pin_config.pull_mode = GPIO_PULL_MODE_NONE;
-    Gpio_init(&pins->clock);
+    gpio_init(&pins->clock);
 
     pins->mosi.reg = GPIOB;
     pins->mosi.pin_config.number = GPIO_PIN_15;
@@ -158,7 +158,7 @@ static void init_gpio(Spi_pins_t *pins)
     pins->mosi.pin_config.alt_fun_mode = GPIO_ALTERNATE_FUNCTION_5;
     pins->mosi.pin_config.out_type = GPIO_OUT_TYPE_PUSH_PULL;
     pins->mosi.pin_config.pull_mode = GPIO_PULL_MODE_NONE;
-    Gpio_init(&pins->mosi);
+    gpio_init(&pins->mosi);
 
     // pins->nss.reg = GPIOB;
     // pins->nss.pin_config.number = GPIO_PIN_4;
@@ -166,7 +166,7 @@ static void init_gpio(Spi_pins_t *pins)
     // pins->nss.pin_config.alt_fun_mode = GPIO_ALTERNATE_FUNCTION_7;
     // pins->nss.pin_config.out_type = GPIO_OUT_TYPE_PUSH_PULL;
     // pins->nss.pin_config.pull_mode = GPIO_PULL_MODE_NONE;
-    // Gpio_init(pins->nss.reg);
+    // gpio_init(pins->nss.reg);
 }
 
 void init_spi(Spi_handle_t *handle)
@@ -213,9 +213,9 @@ int main()
 
 typedef struct
 {
-    Gpio_handle_t clock;
-    Gpio_handle_t mosi;
-    Gpio_handle_t nss;
+    gpio_handle_t clock;
+    gpio_handle_t mosi;
+    gpio_handle_t nss;
 } Spi_pins_t;
 
 static void init_gpio(Spi_pins_t *pins)
@@ -226,7 +226,7 @@ static void init_gpio(Spi_pins_t *pins)
     pins->clock.pin_config.alt_fun_mode = GPIO_ALTERNATE_FUNCTION_5;
     pins->clock.pin_config.out_type = GPIO_OUT_TYPE_PUSH_PULL;
     pins->clock.pin_config.pull_mode = GPIO_PULL_MODE_UP;
-    Gpio_init(&pins->clock);
+    gpio_init(&pins->clock);
 
     pins->mosi.reg = GPIOB;
     pins->mosi.pin_config.number = GPIO_PIN_15;
@@ -234,7 +234,7 @@ static void init_gpio(Spi_pins_t *pins)
     pins->mosi.pin_config.alt_fun_mode = GPIO_ALTERNATE_FUNCTION_5;
     pins->mosi.pin_config.out_type = GPIO_OUT_TYPE_PUSH_PULL;
     pins->mosi.pin_config.pull_mode = GPIO_PULL_MODE_UP;
-    Gpio_init(&pins->mosi);
+    gpio_init(&pins->mosi);
 
     pins->nss.reg = GPIOB;
     pins->nss.pin_config.number = GPIO_PIN_4;
@@ -242,7 +242,7 @@ static void init_gpio(Spi_pins_t *pins)
     pins->nss.pin_config.alt_fun_mode = GPIO_ALTERNATE_FUNCTION_7;
     pins->nss.pin_config.out_type = GPIO_OUT_TYPE_PUSH_PULL;
     pins->nss.pin_config.pull_mode = GPIO_PULL_MODE_UP;
-    Gpio_init(&pins->nss);
+    gpio_init(&pins->nss);
 }
 
 void init_spi(Spi_handle_t *handle)
@@ -259,7 +259,7 @@ void init_spi(Spi_handle_t *handle)
     Spi_init(handle);
 }
 
-static void init_button(Gpio_handle_t *button)
+static void init_button(gpio_handle_t *button)
 {
     button->reg = GPIOC;
     button->pin_config.number = GPIO_PIN_13;
@@ -267,7 +267,7 @@ static void init_button(Gpio_handle_t *button)
     button->pin_config.speed = GPIO_SPEED_FAST;
     button->pin_config.pull_mode = GPIO_PULL_MODE_NONE;
 
-    Gpio_init(button);
+    gpio_init(button);
 }
 
 int main()
@@ -280,12 +280,12 @@ int main()
     init_spi(&spi);
     Spi_enable_ssoe(spi.reg, true);
 
-    Gpio_handle_t button;
+    gpio_handle_t button;
     init_button(&button);
 
     while (1)
     {
-        while (GPIO_BUTTON_STATE_HIGH == Gpio_read_from_input_pin(&button))
+        while (GPIO_BUTTON_STATE_HIGH == gpio_read_pin(&button))
         {
         }
         Utils_delay();
@@ -312,10 +312,10 @@ int main()
 
 typedef struct
 {
-    Gpio_handle_t clock;
-    Gpio_handle_t mosi;
-    Gpio_handle_t miso;
-    Gpio_handle_t nss;
+    gpio_handle_t clock;
+    gpio_handle_t mosi;
+    gpio_handle_t miso;
+    gpio_handle_t nss;
 } Spi_pins_t;
 
 #define LED_PIN ARDUINO_DIGITAL_PIN_9
@@ -334,7 +334,7 @@ static void init_gpio(Spi_pins_t *pins)
     pins->clock.pin_config.alt_fun_mode = GPIO_ALTERNATE_FUNCTION_5;
     pins->clock.pin_config.out_type = GPIO_OUT_TYPE_PUSH_PULL;
     pins->clock.pin_config.pull_mode = GPIO_PULL_MODE_UP;
-    Gpio_init(&pins->clock);
+    gpio_init(&pins->clock);
 
     pins->mosi.reg = GPIOB;
     pins->mosi.pin_config.number = GPIO_PIN_15;
@@ -342,7 +342,7 @@ static void init_gpio(Spi_pins_t *pins)
     pins->mosi.pin_config.alt_fun_mode = GPIO_ALTERNATE_FUNCTION_5;
     pins->mosi.pin_config.out_type = GPIO_OUT_TYPE_PUSH_PULL;
     pins->mosi.pin_config.pull_mode = GPIO_PULL_MODE_UP;
-    Gpio_init(&pins->mosi);
+    gpio_init(&pins->mosi);
 
     pins->miso.reg = GPIOC;
     pins->miso.pin_config.number = GPIO_PIN_2;
@@ -350,7 +350,7 @@ static void init_gpio(Spi_pins_t *pins)
     pins->miso.pin_config.alt_fun_mode = GPIO_ALTERNATE_FUNCTION_5;
     pins->miso.pin_config.out_type = GPIO_OUT_TYPE_PUSH_PULL;
     pins->miso.pin_config.pull_mode = GPIO_PULL_MODE_UP;
-    Gpio_init(&pins->miso);
+    gpio_init(&pins->miso);
 
     pins->nss.reg = GPIOB;
     pins->nss.pin_config.number = GPIO_PIN_4;
@@ -358,7 +358,7 @@ static void init_gpio(Spi_pins_t *pins)
     pins->nss.pin_config.alt_fun_mode = GPIO_ALTERNATE_FUNCTION_7;
     pins->nss.pin_config.out_type = GPIO_OUT_TYPE_PUSH_PULL;
     pins->nss.pin_config.pull_mode = GPIO_PULL_MODE_UP;
-    Gpio_init(&pins->nss);
+    gpio_init(&pins->nss);
 }
 
 void init_spi(Spi_handle_t *handle)
@@ -375,7 +375,7 @@ void init_spi(Spi_handle_t *handle)
     Spi_init(handle);
 }
 
-static void init_button(Gpio_handle_t *button)
+static void init_button(gpio_handle_t *button)
 {
     button->reg = GPIOC;
     button->pin_config.number = GPIO_PIN_13;
@@ -383,7 +383,7 @@ static void init_button(Gpio_handle_t *button)
     button->pin_config.speed = GPIO_SPEED_FAST;
     button->pin_config.pull_mode = GPIO_PULL_MODE_NONE;
 
-    Gpio_init(button);
+    gpio_init(button);
 }
 
 int main()
@@ -398,12 +398,12 @@ int main()
     init_spi(&spi);
     Spi_enable_ssoe(spi.reg, true);
 
-    Gpio_handle_t button;
+    gpio_handle_t button;
     init_button(&button);
 
     while (true)
     {
-        while (GPIO_BUTTON_STATE_HIGH == Gpio_read_from_input_pin(&button))
+        while (GPIO_BUTTON_STATE_HIGH == gpio_read_pin(&button))
         {
         }
         Utils_delay();
@@ -412,26 +412,26 @@ int main()
 
         Arduino_write_led(&spi, ARDUINO_DIGITAL_STATUS_ON, LED_PIN);
 
-        while (GPIO_BUTTON_STATE_HIGH == Gpio_read_from_input_pin(&button))
+        while (GPIO_BUTTON_STATE_HIGH == gpio_read_pin(&button))
         {
         }
         Utils_delay();
 
         uint8_t value = Arduino_read_analog(&spi, ARDUINO_ANALOG_PIN_0);
 
-        while (GPIO_BUTTON_STATE_HIGH == Gpio_read_from_input_pin(&button))
+        while (GPIO_BUTTON_STATE_HIGH == gpio_read_pin(&button))
         {
         }
         Utils_delay();
         value = Arduino_read_digital(&spi, LED_PIN);
 
-        while (GPIO_BUTTON_STATE_HIGH == Gpio_read_from_input_pin(&button))
+        while (GPIO_BUTTON_STATE_HIGH == gpio_read_pin(&button))
         {
         }
         Utils_delay();
         Arduino_print(&spi, "hello Arduino");
 
-        while (GPIO_BUTTON_STATE_HIGH == Gpio_read_from_input_pin(&button))
+        while (GPIO_BUTTON_STATE_HIGH == gpio_read_pin(&button))
         {
         }
         Utils_delay();
