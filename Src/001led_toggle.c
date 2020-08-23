@@ -470,7 +470,7 @@ int main()
     };
 
     init(&i2c_handle);
-    const uint8_t message[] = "hola man\n";
+    uint8_t message[] = "hola man\n";
 
     for (;;)
     {

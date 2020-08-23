@@ -45,7 +45,7 @@ typedef struct
  */
 typedef struct
 {
-    const uint8_t *buffer;
+    uint8_t *buffer;
     size_t size;
     uint8_t slave_address;
 } i2c_message_t;
@@ -60,7 +60,7 @@ void I2c_enable_ssi(i2c_reg_t *p_reg, bool enable);
 void I2c_enable_ssoe(i2c_reg_t *p_reg, bool enable);
 
 void i2c_send_as_master(const i2c_handle_t *p_handle, const i2c_message_t *p_message);
-void I2c_receive(i2c_handle_t *p_handle);
+void i2c_receive_as_master(const i2c_handle_t *p_handle, i2c_message_t *p_message);
 
 void I2c_send_interrupt(i2c_handle_t *p_handle);
 void I2c_receive_interrupt(i2c_handle_t *p_handle);

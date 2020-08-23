@@ -75,10 +75,12 @@ typedef enum
 static inline void reset_register(uint32_t bit);
 static inline uint16_t calculate_ccr(const i2c_cfg_t *p_cfg, uint32_t pclk1);
 static inline void generate_start_condition(volatile i2c_reg_t *p_reg);
+static inline void generate_blocking_start_condition(volatile i2c_reg_t *p_reg);
 static inline void generate_stop_condition(volatile i2c_reg_t *p_reg);
 static inline bool is_start_condition_generated(const volatile i2c_reg_t *p_reg);
 static inline bool is_address_phase_done(const volatile i2c_reg_t *p_reg);
 static inline void execute_address_phase(volatile i2c_reg_t *p_reg, uint8_t slave_address, address_phase_t operation);
+static inline void execute_blocking_address_phase(volatile i2c_reg_t *p_reg, uint8_t slave_address, address_phase_t operation);
 static inline void clear_addr(const volatile i2c_reg_t *p_reg);
 static inline bool is_data_register_empty(const volatile i2c_reg_t *p_reg);
 static inline bool is_byte_transfer_finished(const volatile i2c_reg_t *p_reg);
@@ -105,18 +107,9 @@ void i2c_init(const i2c_handle_t *p_handle)
 
 void i2c_send_as_master(const i2c_handle_t *p_handle, const i2c_message_t *p_message)
 {
-    generate_start_condition(p_handle->p_reg);
+    generate_blocking_start_condition(p_handle->p_reg);
 
-    while (!is_start_condition_generated(p_handle->p_reg))
-    {
-    }
-
-    execute_address_phase(p_handle->p_reg, p_message->slave_address, ADDRESS_PHASE_WRITE);
-
-    while (!is_address_phase_done(p_handle->p_reg))
-    {
-    }
-
+    execute_blocking_address_phase(p_handle->p_reg, p_message->slave_address, ADDRESS_PHASE_WRITE);
     clear_addr(p_handle->p_reg);
 
     for (uint8_t data_idx = 0u; data_idx < p_message->size; data_idx++)
@@ -134,6 +127,10 @@ void i2c_send_as_master(const i2c_handle_t *p_handle, const i2c_message_t *p_mes
     while (!is_byte_transfer_finished(p_handle->p_reg))
     {
     }
+}
+
+void i2c_receive_as_master(const i2c_handle_t *p_handle, i2c_message_t *p_message)
+{
 }
 
 void i2c_enable_peripheral_clock(volatile i2c_reg_t *p_reg, bool enable)
@@ -231,6 +228,15 @@ static inline void generate_start_condition(volatile i2c_reg_t *p_reg)
     p_reg->CR1 |= CR1_START;
 }
 
+static inline void generate_blocking_start_condition(volatile i2c_reg_t *p_reg)
+{
+    generate_start_condition(p_reg);
+
+    while (!is_start_condition_generated(p_reg))
+    {
+    }
+}
+
 static inline void generate_stop_condition(volatile i2c_reg_t *p_reg)
 {
     p_reg->CR1 |= CR1_STOP;
@@ -255,6 +261,14 @@ static inline void execute_address_phase(volatile i2c_reg_t *p_reg, uint8_t slav
 
     default:
         break;
+    }
+}
+
+static inline void execute_blocking_address_phase(volatile i2c_reg_t *p_reg, uint8_t slave_address, address_phase_t operation)
+{
+    execute_address_phase(p_reg, slave_address, operation);
+    while (!is_address_phase_done(p_reg))
+    {
     }
 }
 
