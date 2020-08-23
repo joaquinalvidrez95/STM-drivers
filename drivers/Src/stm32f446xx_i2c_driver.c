@@ -123,8 +123,8 @@ void i2c_send_as_master(const i2c_handle_t *p_handle, const i2c_message_t *p_mes
     {
         while (!is_data_register_empty(p_handle->p_reg))
         {
-            p_handle->p_reg->DR = p_message->buffer[data_idx];
         }
+        p_handle->p_reg->DR = p_message->buffer[data_idx];
     }
 
     while (!is_data_register_empty(p_handle->p_reg))

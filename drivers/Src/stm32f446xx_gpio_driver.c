@@ -65,7 +65,7 @@ void gpio_init(const gpio_handle_t *p_handle)
 
     /* Configures opt type. */
     p_handle->p_reg->OTYPER &= ~(0x1u << p_handle->cfg.number);
-    p_handle->p_reg->OTYPER |= p_handle->cfg.out_type << p_handle->cfg.out_type;
+    p_handle->p_reg->OTYPER |= (uint32_t)p_handle->cfg.out_type << (uint32_t)p_handle->cfg.number;
 
     /* Configures alternate function */
     if (p_handle->cfg.mode == GPIO_MODE_ALT_FN)

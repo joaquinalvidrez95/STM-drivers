@@ -490,10 +490,10 @@ int main()
 
 static void init(const i2c_handle_t *p_handle)
 {
+    nucleo_init();
     init_pins();
     i2c_init(p_handle);
     i2c_enable_peripheral(p_handle->p_reg, true);
-    nucleo_init();
 }
 
 static void init_pins(void)
