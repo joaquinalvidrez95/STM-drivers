@@ -60,7 +60,7 @@ int main()
 {
     gpio_handle_t led;
     led.p_reg = GPIOA;
-    led.cfg.number = Gpio_pin_5;
+    led.cfg.number = GPIO_PIN_5;
     led.cfg.mode = GPIO_MODE_OUT;
     led.cfg.speed = GPIO_SPEED_FAST;
     led.cfg.out_type = GPIO_OUT_TYPE_PUSH_PULL;
@@ -474,17 +474,17 @@ int main()
 
     for (;;)
     {
-        while (nucleo_is_button_pressed())
+        while (!nucleo_is_button_pressed())
         {
-            utils_delay();
-
-            i2c_send_as_master(&i2c_handle,
-                               &(i2c_message_t){
-                                   .buffer = &message[0],
-                                   .size = sizeof(message),
-                                   .slave_address = ARDUINO_ADDRESS,
-                               });
         }
+        utils_delay();
+
+        i2c_send_as_master(&i2c_handle,
+                           &(i2c_message_t){
+                               .buffer = &message[0],
+                               .size = sizeof(message),
+                               .slave_address = ARDUINO_ADDRESS,
+                           });
     }
 }
 
@@ -505,7 +505,7 @@ static void init_pins(void)
             .out_type = GPIO_OUT_TYPE_OPEN_DRAIN,
             .pull_mode = GPIO_PULL_MODE_UP,
             .alt_fun_mode = GPIO_ALTERNATE_FUNCTION_4,
-            .number = GPIO_PIN_6,
+            .number = GPIO_PIN_8,
             .speed = GPIO_SPEED_FAST,
         },
     };
@@ -517,7 +517,7 @@ static void init_pins(void)
             .out_type = GPIO_OUT_TYPE_OPEN_DRAIN,
             .pull_mode = GPIO_PULL_MODE_UP,
             .alt_fun_mode = GPIO_ALTERNATE_FUNCTION_4,
-            .number = GPIO_PIN_7,
+            .number = GPIO_PIN_9,
             .speed = GPIO_SPEED_FAST,
         },
     };
