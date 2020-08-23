@@ -100,33 +100,33 @@ typedef struct
     gpio_pull_mode_t pull_mode;
     gpio_out_type_t out_type;
     uint8_t alt_fun_mode;
-} gpio_pin_config_t;
+} gpio_cfg_t;
 
 typedef struct
 {
-    gpio_reg_t *reg;
-    gpio_pin_config_t pin_config;
+    gpio_reg_t *const p_reg;
+    const gpio_cfg_t cfg;
 } gpio_handle_t;
 
 typedef enum
 {
-	GPIO_PIN_STATUS_RESET = 0u,
-	GPIO_PIN_STATUS_SET = 1u,
+    GPIO_PIN_STATUS_RESET = 0u,
+    GPIO_PIN_STATUS_SET = 1u,
 } gpio_pin_status_t;
 
-void gpio_init(gpio_handle_t *handle);
-void gpio_deinit(gpio_reg_t *reg);
+void gpio_init(const gpio_handle_t *p_handle);
+void gpio_deinit(gpio_reg_t *p_reg);
 
-void gpio_peripheral_clock_control(gpio_reg_t *reg, bool enable);
+void gpio_enable_peripheral_clock(gpio_reg_t *p_reg, bool enable);
 
-gpio_button_state_t gpio_read_pin(gpio_handle_t *handle);
-uint16_t gpio_read_port(gpio_reg_t *reg);
-void gpio_write_to_pin(gpio_handle_t *handle, gpio_pin_status_t value);
-void gpio_write_to_output_port(gpio_reg_t *reg, uint16_t value);
-void gpio_toggle_pin(gpio_handle_t *handle);
+gpio_button_state_t gpio_read_pin(const gpio_handle_t *p_handle);
+uint16_t gpio_read_port(gpio_reg_t *p_reg);
+void gpio_write_to_pin(gpio_handle_t *p_handle, gpio_pin_status_t value);
+void gpio_write_to_output_port(gpio_reg_t *p_reg, uint16_t value);
+void gpio_toggle_pin(gpio_handle_t *p_handle);
 
-void gpio_config_irq(Irq_number_t irq_number, bool enable);
-void gpio_config_irq_priority(Irq_number_t irq_number, Nvic_irq_priority_t priority);
+void gpio_config_irq(irq_number_t irq_number, bool enable);
+void gpio_config_irq_priority(irq_number_t irq_number, nvic_irq_priority_t priority);
 void gpio_irq_handling(gpio_pin_t pin);
 
 #endif /* INC_STM32F446XX_GPIO_DRIVER_H_ */

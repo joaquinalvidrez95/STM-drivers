@@ -8,6 +8,6 @@
 #ifndef UTILS_H_
 #define UTILS_H_
 
-void Utils_delay();
+void utils_delay();
 
 #endif /* UTILS_H_ */

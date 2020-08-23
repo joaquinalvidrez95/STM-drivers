@@ -45,7 +45,7 @@ typedef enum
 	IRQ_NUMBER_UART4 = 52,
 	IRQ_NUMBER_UART5 = 53,
 	IRQ_NUMBER_USART6 = 71,
-} Irq_number_t;
+} irq_number_t;
 
 typedef enum
 {
@@ -65,7 +65,7 @@ typedef enum
 	NVIC_IRQ_PRIORITY_13,
 	NVIC_IRQ_PRIORITY_14,
 	NVIC_IRQ_PRIORITY_15,
-} Nvic_irq_priority_t;
+} nvic_irq_priority_t;
 
 #define FLASH_BASEADDR 0x08000000LU
 
@@ -180,26 +180,26 @@ typedef struct
 
 typedef struct
 {
-	volatile uint16_t CR1;
-	uint16_t unused_0;
-	volatile uint16_t CR2;
-	uint16_t unused_1;
-	volatile uint16_t OAR1;
-	uint16_t unused_2;
-	volatile uint16_t OAR2;
-	uint16_t unused_3;
-	volatile uint16_t DR;
-	uint16_t unused_4;
-	volatile uint16_t SR1;
-	uint16_t unused_5;
-	volatile uint16_t SR2;
-	uint16_t unused_6;
-	volatile uint16_t CCR;
-	uint16_t unused_7;
-	volatile uint16_t TRISE;
-	uint16_t unused_8;
-	volatile uint16_t FLTR;
-	uint16_t unused_9;
+	uint16_t CR1;
+	const uint16_t _unused_0;
+	uint16_t CR2;
+	const uint16_t _unused_1;
+	uint16_t OAR1;
+	const uint16_t _unused_2;
+	uint16_t OAR2;
+	const uint16_t _unused_3;
+	uint16_t DR;
+	const uint16_t _unused_4;
+	uint16_t SR1;
+	const uint16_t _unused_5;
+	uint16_t SR2;
+	const uint16_t _unused_6;
+	uint16_t CCR;
+	const uint16_t _unused_7;
+	uint16_t TRISE;
+	const uint16_t _unused_8;
+	uint16_t FLTR;
+	const uint16_t _unused_9;
 } i2c_reg_t;
 
 typedef struct
@@ -242,7 +242,7 @@ typedef struct
 	volatile uint32_t DCK_CFGR;
 	volatile uint32_t CK_GATENR;
 	volatile uint32_t DCK_CFGR2;
-} Rcc_reg_t;
+} rcc_reg_t;
 
 typedef struct
 {
@@ -274,7 +274,7 @@ typedef struct
 #define GPIOG ((gpio_reg_t *const)GPIOG_BASEADDR)
 #define GPIOH ((gpio_reg_t *const)GPIOH_BASEADDR)
 
-#define RCC ((Rcc_reg_t *)RCC_BASEADDR)
+#define RCC ((rcc_reg_t *)RCC_BASEADDR)
 #define EXTI ((Exti_reg_t *)EXTI_BASEADDR)
 #define SYSCFG ((Syscfg_reg_t *)SYSCFG_BASEADDR)
 #define SYSCFG ((Syscfg_reg_t *)SYSCFG_BASEADDR)
@@ -284,9 +284,9 @@ typedef struct
 #define SPI3 ((Spi_reg_t *)SPI3_BASEADDR)
 #define SPI4 ((Spi_reg_t *)SPI4_BASEADDR)
 
-#define I2C1 ((i2c_reg_t *)I2C1_BASEADDR)
-#define I2C2 ((i2c_reg_t *)I2C2_BASEADDR)
-#define I2C3 ((i2c_reg_t *)I2C3_BASEADDR)
+#define I2C1 ((volatile i2c_reg_t *)I2C1_BASEADDR)
+#define I2C2 ((volatile i2c_reg_t *)I2C2_BASEADDR)
+#define I2C3 ((volatile i2c_reg_t *)I2C3_BASEADDR)
 
 /** Enables GPIOx */
 #define GPIOA_PCLCK_EN() (RCC->AHBENR[0] |= (1u << 0u))
@@ -308,6 +308,7 @@ typedef struct
 #define GPIOG_PCLCK_DI() (RCC->AHBENR[0] &= ~(1u << 6u))
 #define GPIOH_PCLCK_DI() (RCC->AHBENR[0] &= ~(1u << 7u))
 
+/* TODO: Move to i2c */
 /** Enables I2Cx */
 #define I2C_PCLK_EN(X) (RCC->APBENR[0] |= (1u << X))
 #define I2C1_PCLK_EN() (I2C_PCLK_EN(21u))
@@ -351,14 +352,14 @@ typedef enum
 	Gpio_reset_port_f,
 	Gpio_reset_port_g,
 	Gpio_reset_port_h,
-} Gpio_reset_t;
+} gpio_reset_t;
 
 typedef enum
 {
 	I2C_RESET_1 = 1u << 21u,
 	I2C_RESET_2 = 1u << 22u,
 	I2C_RESET_3 = 1u << 23u,
-} I2c_reset_e;
+} i2c_reset_e;
 
 #define GPIOX_REG_RESET(port)                \
 	do                                       \

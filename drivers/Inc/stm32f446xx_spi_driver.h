@@ -101,19 +101,19 @@ typedef struct
  */
 typedef struct
 {
-    Spi_reg_t *reg; /*!< This holds the base address of SPIx(x:0,1,2) peripheral >*/
+    Spi_reg_t *p_reg; /*!< This holds the base address of SPIx(x:0,1,2) peripheral >*/
     Spi_config_t cfg;
     Spi_buffer_t tx;
     Spi_buffer_t rx;
 } Spi_handle_t;
 
 void Spi_init(Spi_handle_t *handle);
-void Spi_deinit(Spi_reg_t *reg);
+void Spi_deinit(Spi_reg_t *p_reg);
 
-void Spi_peripheral_clock_control(Spi_reg_t *reg, bool enable);
-void Spi_enable_peripheral(Spi_reg_t *reg, bool enable);
-void Spi_enable_ssi(Spi_reg_t *reg, bool enable);
-void Spi_enable_ssoe(Spi_reg_t *reg, bool enable);
+void Spi_peripheral_clock_control(Spi_reg_t *p_reg, bool enable);
+void Spi_enable_peripheral(Spi_reg_t *p_reg, bool enable);
+void Spi_enable_ssi(Spi_reg_t *p_reg, bool enable);
+void Spi_enable_ssoe(Spi_reg_t *p_reg, bool enable);
 
 void Spi_send(Spi_handle_t *handle);
 void Spi_receive(Spi_handle_t *handle);
@@ -121,11 +121,11 @@ void Spi_receive(Spi_handle_t *handle);
 void Spi_send_interrupt(Spi_handle_t *handle);
 void Spi_receive_interrupt(Spi_handle_t *handle);
 
-void Spi_config_irq(Irq_number_t irq_number, bool enable);
-void Spi_config_irq_priority(Irq_number_t irq_number, Nvic_irq_priority_t priority);
+void Spi_config_irq(irq_number_t irq_number, bool enable);
+void Spi_config_irq_priority(irq_number_t irq_number, nvic_irq_priority_t priority);
 void Spi_handle_irq(Spi_handle_t *handle);
 
-void Spi_clear_ovr_flag(Spi_reg_t *reg);
+void Spi_clear_ovr_flag(Spi_reg_t *p_reg);
 void Spi_close_transmission(Spi_handle_t *handle);
 void Spi_close_reception(Spi_handle_t *handle);
 

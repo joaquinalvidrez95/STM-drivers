@@ -11,36 +11,36 @@
 /**
  * @brief 
  * 
- * @param handle 
+ * @param p_handle 
  */
-void gpio_init(gpio_handle_t *handle)
+void gpio_init(const gpio_handle_t *p_handle)
 {
-    gpio_peripheral_clock_control(handle->reg, true);
+    gpio_enable_peripheral_clock(p_handle->p_reg, true);
 
     /* TODO: Check if memset */
     /* Configures mode. */
-    if (handle->pin_config.mode <= GPIO_MODE_ANALOG)
+    if (p_handle->cfg.mode <= GPIO_MODE_ANALOG)
     {
-        handle->reg->MODER &= ~(0x3u << (2 * handle->pin_config.number));
-        handle->reg->MODER |= handle->pin_config.mode << (2 * handle->pin_config.number);
+        p_handle->p_reg->MODER &= ~(0x3u << (2 * p_handle->cfg.number));
+        p_handle->p_reg->MODER |= p_handle->cfg.mode << (2 * p_handle->cfg.number);
     }
     else
     {
-        switch (handle->pin_config.mode)
+        switch (p_handle->cfg.mode)
         {
         case GPIO_MODE_INTERRUPT_FT:
-            EXTI->FTSR |= 1u << handle->pin_config.number;
-            EXTI->RTSR &= ~(1u << handle->pin_config.number);
+            EXTI->FTSR |= 1u << p_handle->cfg.number;
+            EXTI->RTSR &= ~(1u << p_handle->cfg.number);
             break;
 
         case GPIO_MODE_INTERRUPT_RT:
-            EXTI->RTSR |= 1u << handle->pin_config.number;
-            EXTI->FTSR &= ~(1u << handle->pin_config.number);
+            EXTI->RTSR |= 1u << p_handle->cfg.number;
+            EXTI->FTSR &= ~(1u << p_handle->cfg.number);
             break;
 
         case GPIO_MODE_INTERRUPT_RFT:
-            EXTI->RTSR |= 1u << handle->pin_config.number;
-            EXTI->FTSR |= 1u << handle->pin_config.number;
+            EXTI->RTSR |= 1u << p_handle->cfg.number;
+            EXTI->FTSR |= 1u << p_handle->cfg.number;
             break;
 
         default:
@@ -49,31 +49,31 @@ void gpio_init(gpio_handle_t *handle)
         /* Configures the GPIO port selection in SYSCFG_EXTICR */
 
         SYSCFG_PCLK_EN();
-        size_t index = handle->pin_config.number / 4u;
-        uint8_t section = handle->pin_config.number % 4u;
-        SYSCFG->EXTICR[index] = (uint32_t)Driver_gpio_address_to_code(handle->reg) << (section * 4u);
-        EXTI->IMR |= 1u << handle->pin_config.number;
+        size_t index = p_handle->cfg.number / 4u;
+        uint8_t section = p_handle->cfg.number % 4u;
+        SYSCFG->EXTICR[index] = (uint32_t)Driver_gpio_address_to_code(p_handle->p_reg) << (section * 4u);
+        EXTI->IMR |= 1u << p_handle->cfg.number;
     }
 
     /* Configures speed. */
-    handle->reg->OSPEEDER &= ~(0x3u << (2 * handle->pin_config.number));
-    handle->reg->OSPEEDER |= handle->pin_config.speed << (2 * handle->pin_config.number);
+    p_handle->p_reg->OSPEEDER &= ~(0x3u << (2 * p_handle->cfg.number));
+    p_handle->p_reg->OSPEEDER |= p_handle->cfg.speed << (2 * p_handle->cfg.number);
 
     /* Configures pupd. */
-    handle->reg->PUPDR &= ~(0x3u << (2 * handle->pin_config.number));
-    handle->reg->PUPDR |= handle->pin_config.pull_mode << (2 * handle->pin_config.number);
+    p_handle->p_reg->PUPDR &= ~(0x3u << (2 * p_handle->cfg.number));
+    p_handle->p_reg->PUPDR |= p_handle->cfg.pull_mode << (2 * p_handle->cfg.number);
 
     /* Configures opt type. */
-    handle->reg->OTYPER &= ~(0x1u << handle->pin_config.number);
-    handle->reg->OTYPER |= handle->pin_config.out_type << handle->pin_config.out_type;
+    p_handle->p_reg->OTYPER &= ~(0x1u << p_handle->cfg.number);
+    p_handle->p_reg->OTYPER |= p_handle->cfg.out_type << p_handle->cfg.out_type;
 
     /* Configures alternate function */
-    if (handle->pin_config.mode == GPIO_MODE_ALT_FN)
+    if (p_handle->cfg.mode == GPIO_MODE_ALT_FN)
     {
-        const uint32_t temp1 = handle->pin_config.number / 8u;
-        const uint32_t tmp2 = handle->pin_config.number % 8u;
-        handle->reg->AFR[temp1] &= ~(0xFu << (4 * tmp2));
-        handle->reg->AFR[temp1] |= handle->pin_config.alt_fun_mode << (4 * tmp2);
+        const uint32_t temp1 = p_handle->cfg.number / 8u;
+        const uint32_t tmp2 = p_handle->cfg.number % 8u;
+        p_handle->p_reg->AFR[temp1] &= ~(0xFu << (4 * tmp2));
+        p_handle->p_reg->AFR[temp1] |= p_handle->cfg.alt_fun_mode << (4 * tmp2);
     }
 }
 
@@ -82,38 +82,38 @@ void gpio_init(gpio_handle_t *handle)
  * 
  * @param gpiox 
  */
-void gpio_deinit(gpio_reg_t *reg)
+void gpio_deinit(gpio_reg_t *p_reg)
 {
-    Gpio_reset_t port = Gpio_reset_port_a;
+    gpio_reset_t port = Gpio_reset_port_a;
 
-    if (reg == GPIOA)
+    if (p_reg == GPIOA)
     {
     }
-    else if (reg == GPIOB)
+    else if (p_reg == GPIOB)
     {
         port = Gpio_reset_port_b;
     }
-    else if (reg == GPIOC)
+    else if (p_reg == GPIOC)
     {
         port = Gpio_reset_port_c;
     }
-    else if (reg == GPIOD)
+    else if (p_reg == GPIOD)
     {
         port = Gpio_reset_port_d;
     }
-    else if (reg == GPIOE)
+    else if (p_reg == GPIOE)
     {
         port = Gpio_reset_port_e;
     }
-    else if (reg == GPIOF)
+    else if (p_reg == GPIOF)
     {
         port = Gpio_reset_port_f;
     }
-    else if (reg == GPIOG)
+    else if (p_reg == GPIOG)
     {
         port = Gpio_reset_port_g;
     }
-    else if (reg == GPIOH)
+    else if (p_reg == GPIOH)
     {
         port = Gpio_reset_port_h;
     }
@@ -126,74 +126,74 @@ void gpio_deinit(gpio_reg_t *reg)
  * @param gpiox 
  * @param enable 
  */
-void gpio_peripheral_clock_control(gpio_reg_t *reg, bool enable)
+void gpio_enable_peripheral_clock(gpio_reg_t *p_reg, bool enable)
 {
     if (enable == En_status_enable)
     {
-        if (reg == GPIOA)
+        if (p_reg == GPIOA)
         {
             GPIOA_PCLCK_EN();
         }
-        else if (reg == GPIOB)
+        else if (p_reg == GPIOB)
         {
             GPIOB_PCLCK_EN();
         }
-        else if (reg == GPIOC)
+        else if (p_reg == GPIOC)
         {
             GPIOC_PCLCK_EN();
         }
-        else if (reg == GPIOD)
+        else if (p_reg == GPIOD)
         {
             GPIOD_PCLCK_EN();
         }
-        else if (reg == GPIOE)
+        else if (p_reg == GPIOE)
         {
             GPIOE_PCLCK_EN();
         }
-        else if (reg == GPIOF)
+        else if (p_reg == GPIOF)
         {
             GPIOF_PCLCK_EN();
         }
-        else if (reg == GPIOG)
+        else if (p_reg == GPIOG)
         {
             GPIOG_PCLCK_EN();
         }
-        else if (reg == GPIOH)
+        else if (p_reg == GPIOH)
         {
             GPIOH_PCLCK_EN();
         }
     }
     else
     {
-        if (reg == GPIOA)
+        if (p_reg == GPIOA)
         {
             GPIOA_PCLCK_DI();
         }
-        else if (reg == GPIOB)
+        else if (p_reg == GPIOB)
         {
             GPIOB_PCLCK_DI();
         }
-        else if (reg == GPIOC)
+        else if (p_reg == GPIOC)
         {
             GPIOC_PCLCK_DI();
         }
-        else if (reg == GPIOD)
+        else if (p_reg == GPIOD)
         {
             GPIOD_PCLCK_DI();
         }
-        else if (reg == GPIOE)
+        else if (p_reg == GPIOE)
         {
             GPIOE_PCLCK_DI();
         }
-        else if (reg == GPIOF)
+        else if (p_reg == GPIOF)
         {
             GPIOF_PCLCK_DI();
         }
-        else if (reg == GPIOG)
+        else if (p_reg == GPIOG)
         {
             GPIOG_PCLCK_DI();
         }
-        else if (reg == GPIOH)
+        else if (p_reg == GPIOH)
         {
             GPIOH_PCLCK_DI();
         }
@@ -203,41 +203,41 @@ void gpio_peripheral_clock_control(gpio_reg_t *reg, bool enable)
 /**
  * @brief 
  * 
- * @param reg 
+ * @param p_reg 
  * @param pin 
  * @return gpio_button_state_t 
  */
-gpio_button_state_t gpio_read_pin(gpio_handle_t *handle)
+gpio_button_state_t gpio_read_pin(const gpio_handle_t *p_handle)
 {
-    return (gpio_button_state_t)((handle->reg->IDR >> handle->pin_config.number) & 0x00000001u);
+    return (gpio_button_state_t)((p_handle->p_reg->IDR >> p_handle->cfg.number) & 0x00000001u);
 }
 
 /**
  * @brief 
  * 
- * @param reg 
+ * @param p_reg 
  * @return uint16_t 
  */
-uint16_t gpio_read_port(gpio_reg_t *reg)
+uint16_t gpio_read_port(gpio_reg_t *p_reg)
 {
-    return (uint16_t)(reg->IDR);
+    return (uint16_t)(p_reg->IDR);
 }
 
 /**
  * @brief 
  * 
- * @param handle 
+ * @param p_handle 
  * @param value 
  */
-void gpio_write_to_pin(gpio_handle_t *handle, gpio_pin_status_t value)
+void gpio_write_to_pin(gpio_handle_t *p_handle, gpio_pin_status_t value)
 {
     if (value == GPIO_PIN_STATUS_SET)
     {
-        handle->reg->ODR |= 1 << handle->pin_config.number;
+        p_handle->p_reg->ODR |= 1u << p_handle->cfg.number;
     }
     else
     {
-        handle->reg->ODR &= ~(1 << handle->pin_config.number);
+        p_handle->p_reg->ODR &= ~(1u << p_handle->cfg.number);
     }
 }
 
@@ -247,9 +247,9 @@ void gpio_write_to_pin(gpio_handle_t *handle, gpio_pin_status_t value)
  * @param gpiox 
  * @param value 
  */
-void gpio_write_to_output_port(gpio_reg_t *reg, uint16_t value)
+void gpio_write_to_output_port(gpio_reg_t *p_reg, uint16_t value)
 {
-    reg->ODR = value;
+    p_reg->ODR = value;
 }
 
 /**
@@ -258,9 +258,9 @@ void gpio_write_to_output_port(gpio_reg_t *reg, uint16_t value)
  * @param gpiox 
  * @param pin 
  */
-void gpio_toggle_pin(gpio_handle_t *handle)
+void gpio_toggle_pin(gpio_handle_t *p_handle)
 {
-    handle->reg->ODR ^= 1u << handle->pin_config.number;
+    p_handle->p_reg->ODR ^= 1u << p_handle->cfg.number;
 }
 
 /**
@@ -270,7 +270,7 @@ void gpio_toggle_pin(gpio_handle_t *handle)
  * @param priority 
  * @param enable 
  */
-void gpio_config_irq(Irq_number_t irq_number, bool enable)
+void gpio_config_irq(irq_number_t irq_number, bool enable)
 {
     if (enable == true)
     {
@@ -304,7 +304,7 @@ void gpio_config_irq(Irq_number_t irq_number, bool enable)
     }
 }
 
-void gpio_config_irq_priority(Irq_number_t irq_number, Nvic_irq_priority_t priority)
+void gpio_config_irq_priority(irq_number_t irq_number, nvic_irq_priority_t priority)
 {
     const uint8_t index = irq_number / 4u;
     const uint8_t section = irq_number % 4u;

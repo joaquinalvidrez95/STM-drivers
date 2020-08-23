@@ -7,7 +7,9 @@
 
 #include <stdint.h>
 
-void Utils_delay()
+#include "utils.h"
+
+void utils_delay()
 {
     for (uint32_t i = 0u; i < 500000u; i++)
     {

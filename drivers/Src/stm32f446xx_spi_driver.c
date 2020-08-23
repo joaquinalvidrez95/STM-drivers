@@ -9,15 +9,15 @@
 
 static void Handle_txe_interrupt(Spi_handle_t *handle)
 {
-    if (handle->reg->CR1.DFF == SPI_DFF_8_BITS)
+    if (handle->p_reg->CR1.DFF == SPI_DFF_8_BITS)
     {
-        handle->reg->DR = *handle->tx.data;
+        handle->p_reg->DR = *handle->tx.data;
         handle->tx.size--;
         handle->tx.data++;
     }
     else
     {
-        handle->reg->DR = *((uint16_t *)handle->tx.data);
+        handle->p_reg->DR = *((uint16_t *)handle->tx.data);
         handle->tx.size -= 2u;
         handle->tx.data += 2u;
     }
@@ -31,15 +31,15 @@ static void Handle_txe_interrupt(Spi_handle_t *handle)
 
 static void Handle_rxne_interrupt(Spi_handle_t *handle)
 {
-    if (handle->reg->CR1.DFF == SPI_DFF_8_BITS)
+    if (handle->p_reg->CR1.DFF == SPI_DFF_8_BITS)
     {
-        *handle->rx.data = (uint8_t)handle->reg->DR;
+        *handle->rx.data = (uint8_t)handle->p_reg->DR;
         handle->rx.size--;
         handle->rx.data++;
     }
     else
     {
-        *((uint16_t *)handle->rx.data) = (uint16_t)handle->reg->DR;
+        *((uint16_t *)handle->rx.data) = (uint16_t)handle->p_reg->DR;
         handle->rx.size -= 2u;
         handle->rx.data += 2u;
     }
@@ -56,115 +56,115 @@ static void Handle_ovr_err_interrupt(Spi_handle_t *handle)
     /* Clears the OVR flag */
     if (handle->tx.state != SPI_STATE_BUSY)
     {
-        Spi_clear_ovr_flag(handle->reg);
+        Spi_clear_ovr_flag(handle->p_reg);
     }
     Spi_on_app_event(handle, SPI_EVENT_OVR_ERR);
 }
 
 void Spi_init(Spi_handle_t *handle)
 {
-    Spi_peripheral_clock_control(handle->reg, true);
+    Spi_peripheral_clock_control(handle->p_reg, true);
 
-    handle->reg->CR1.MSTR = (unsigned int)handle->cfg.device_mode;
+    handle->p_reg->CR1.MSTR = (unsigned int)handle->cfg.device_mode;
 
     switch (handle->cfg.bus_config)
     {
     case SPI_BUS_CONFIG_FULL_DUPLEX:
-        handle->reg->CR1.BIDIMODE = 0u;
+        handle->p_reg->CR1.BIDIMODE = 0u;
         break;
     case SPI_BUS_CONFIG_HALF_DUPLEX:
-        handle->reg->CR1.BIDIMODE = 1u;
+        handle->p_reg->CR1.BIDIMODE = 1u;
         break;
     case SPI_BUS_CONFIG_SIMPLE_RX_ONLY:
-        handle->reg->CR1.BIDIMODE = 0u;
-        handle->reg->CR1.RXONLY = 1u;
+        handle->p_reg->CR1.BIDIMODE = 0u;
+        handle->p_reg->CR1.RXONLY = 1u;
         break;
 
     default:
         break;
     }
 
-    handle->reg->CR1.BR = (uint8_t)handle->cfg.sclk_speed;
-    handle->reg->CR1.DFF = (uint8_t)handle->cfg.DFF;
-    handle->reg->CR1.CPOL = (uint8_t)handle->cfg.CPOL;
-    handle->reg->CR1.CPHA = (uint8_t)handle->cfg.CPHA;
-    handle->reg->CR1.SSM = (uint8_t)handle->cfg.SSM;
+    handle->p_reg->CR1.BR = (uint8_t)handle->cfg.sclk_speed;
+    handle->p_reg->CR1.DFF = (uint8_t)handle->cfg.DFF;
+    handle->p_reg->CR1.CPOL = (uint8_t)handle->cfg.CPOL;
+    handle->p_reg->CR1.CPHA = (uint8_t)handle->cfg.CPHA;
+    handle->p_reg->CR1.SSM = (uint8_t)handle->cfg.SSM;
 }
-void Spi_deinit(Spi_reg_t *reg)
+void Spi_deinit(Spi_reg_t *p_reg)
 {
-    if (reg == SPI1)
+    if (p_reg == SPI1)
     {
         SPI1_REG_RESET();
     }
-    else if (reg == SPI2)
+    else if (p_reg == SPI2)
     {
         SPI2_REG_RESET();
     }
-    else if (reg == SPI3)
+    else if (p_reg == SPI3)
     {
         SPI3_REG_RESET();
     }
-    else if (reg == SPI4)
+    else if (p_reg == SPI4)
     {
         SPI4_REG_RESET();
     }
 }
 
-void Spi_peripheral_clock_control(Spi_reg_t *reg, bool enable)
+void Spi_peripheral_clock_control(Spi_reg_t *p_reg, bool enable)
 {
     if (enable == true)
     {
-        if (reg == SPI1)
+        if (p_reg == SPI1)
         {
             SPI1_PCLK_EN();
         }
-        else if (reg == SPI2)
+        else if (p_reg == SPI2)
         {
             SPI2_PCLK_EN();
         }
-        else if (reg == SPI3)
+        else if (p_reg == SPI3)
         {
             SPI3_PCLK_EN();
         }
-        else if (reg == SPI4)
+        else if (p_reg == SPI4)
         {
             SPI4_PCLK_EN();
         }
     }
     else
     {
-        if (reg == SPI1)
+        if (p_reg == SPI1)
         {
             SPI1_PCLK_DI();
         }
-        else if (reg == SPI2)
+        else if (p_reg == SPI2)
         {
             SPI2_PCLK_DI();
         }
-        else if (reg == SPI3)
+        else if (p_reg == SPI3)
         {
             SPI3_PCLK_DI();
         }
-        else if (reg == SPI4)
+        else if (p_reg == SPI4)
         {
             SPI4_PCLK_DI();
         }
     }
 }
 
-void Spi_enable_peripheral(Spi_reg_t *reg, bool enable)
+void Spi_enable_peripheral(Spi_reg_t *p_reg, bool enable)
 {
-    reg->CR1.SPE = (uint8_t)enable;
+    p_reg->CR1.SPE = (uint8_t)enable;
 }
 
-void Spi_enable_ssi(Spi_reg_t *reg, bool enable)
+void Spi_enable_ssi(Spi_reg_t *p_reg, bool enable)
 {
-    reg->CR1.SSI = (uint8_t)enable;
+    p_reg->CR1.SSI = (uint8_t)enable;
 }
 
-void Spi_enable_ssoe(Spi_reg_t *reg, bool enable)
+void Spi_enable_ssoe(Spi_reg_t *p_reg, bool enable)
 {
-    reg->CR2.SSOE = (uint8_t)enable;
+    p_reg->CR2.SSOE = (uint8_t)enable;
 }
 
 /**
@@ -176,19 +176,19 @@ void Spi_send(Spi_handle_t *handle)
 {
     for (size_t i = handle->tx.size; i > 0u;)
     {
-        while (!handle->reg->SR.TXE)
+        while (!handle->p_reg->SR.TXE)
         {
         }
 
-        if (handle->reg->CR1.DFF == SPI_DFF_8_BITS)
+        if (handle->p_reg->CR1.DFF == SPI_DFF_8_BITS)
         {
-            handle->reg->DR = *handle->tx.data;
+            handle->p_reg->DR = *handle->tx.data;
             i--;
             handle->tx.data++;
         }
         else
         {
-            handle->reg->DR = *((uint16_t *)handle->tx.data);
+            handle->p_reg->DR = *((uint16_t *)handle->tx.data);
             i -= 2u;
             handle->tx.data += 2u;
         }
@@ -200,26 +200,26 @@ void Spi_receive(Spi_handle_t *handle)
 
     while (length > 0u)
     {
-        while (!handle->reg->SR.RXNE)
+        while (!handle->p_reg->SR.RXNE)
         {
         }
 
-        if (handle->reg->CR1.DFF == SPI_DFF_8_BITS)
+        if (handle->p_reg->CR1.DFF == SPI_DFF_8_BITS)
         {
-            *handle->rx.data = handle->reg->DR;
+            *handle->rx.data = handle->p_reg->DR;
             length--;
             handle->rx.data++;
         }
         else
         {
-            *((uint16_t *)handle->rx.data) = handle->reg->DR;
+            *((uint16_t *)handle->rx.data) = handle->p_reg->DR;
             length -= 2u;
             handle->rx.data += 2u;
         }
     }
 }
 /* TODO: Reuse code */
-void Spi_config_irq(Irq_number_t irq_number, bool enable)
+void Spi_config_irq(irq_number_t irq_number, bool enable)
 {
     if (enable == true)
     {
@@ -258,7 +258,7 @@ void Spi_send_interrupt(Spi_handle_t *handle)
     if (handle->tx.state != SPI_STATE_BUSY)
     {
         handle->tx.state = SPI_STATE_BUSY;
-        handle->reg->CR2.TXEIE = 1u;
+        handle->p_reg->CR2.TXEIE = 1u;
     }
 }
 void Spi_receive_interrupt(Spi_handle_t *handle)
@@ -266,10 +266,10 @@ void Spi_receive_interrupt(Spi_handle_t *handle)
     if (handle->rx.state != SPI_STATE_BUSY)
     {
         handle->tx.state = SPI_STATE_BUSY;
-        handle->reg->CR2.RXNEIE = 1u;
+        handle->p_reg->CR2.RXNEIE = 1u;
     }
 }
-void Spi_config_irq_priority(Irq_number_t irq_number, Nvic_irq_priority_t priority)
+void Spi_config_irq_priority(irq_number_t irq_number, nvic_irq_priority_t priority)
 {
     const uint8_t index = irq_number / 4u;
     const uint8_t section = irq_number % 4u;
@@ -278,19 +278,19 @@ void Spi_config_irq_priority(Irq_number_t irq_number, Nvic_irq_priority_t priori
 }
 void Spi_handle_irq(Spi_handle_t *handle)
 {
-    if (handle->reg->SR.TXE && handle->reg->CR2.TXEIE)
+    if (handle->p_reg->SR.TXE && handle->p_reg->CR2.TXEIE)
     {
         /* handles TXE */
         Handle_txe_interrupt(handle);
     }
 
-    if (handle->reg->SR.RXNE && handle->reg->CR2.RXNEIE)
+    if (handle->p_reg->SR.RXNE && handle->p_reg->CR2.RXNEIE)
     {
         /* handles RXNE */
         Handle_rxne_interrupt(handle);
     }
 
-    if (handle->reg->SR.OVR && handle->reg->CR2.ERRIE)
+    if (handle->p_reg->SR.OVR && handle->p_reg->CR2.ERRIE)
     {
         /* handles OVR */
         Handle_ovr_err_interrupt(handle);
@@ -300,7 +300,7 @@ void Spi_handle_irq(Spi_handle_t *handle)
 void Spi_close_transmission(Spi_handle_t *handle)
 {
     /* Closes SPI Transmission */
-    handle->reg->CR2.TXEIE = 0u;
+    handle->p_reg->CR2.TXEIE = 0u;
     handle->tx.data = NULL;
     handle->tx.size = 0u;
     handle->tx.state = SPI_STATE_READY;
@@ -309,16 +309,16 @@ void Spi_close_transmission(Spi_handle_t *handle)
 void Spi_close_reception(Spi_handle_t *handle)
 {
     /* Closes SPI reception */
-    handle->reg->CR2.RXNEIE = 0u;
+    handle->p_reg->CR2.RXNEIE = 0u;
     handle->rx.data = NULL;
     handle->rx.size = 0u;
     handle->rx.state = SPI_STATE_READY;
 }
 
-void Spi_clear_ovr_flag(Spi_reg_t *reg)
+void Spi_clear_ovr_flag(Spi_reg_t *p_reg)
 {
-    uint8_t tmp = reg->DR;
-    (void)reg->SR;
+    uint8_t tmp = p_reg->DR;
+    (void)p_reg->SR;
     (void)tmp;
 }
 

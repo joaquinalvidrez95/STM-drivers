@@ -53,7 +53,7 @@ Arduino_digital_status_e Arduino_read_digital(Spi_handle_t *spi, Arduino_digital
     if (send_command(spi, ARDUINO_COMMAND_LED_READ, (uint8_t *)&pin, sizeof(uint8_t)))
     {
         Spi_read_dummy(spi);
-        Utils_delay();
+        utils_delay();
         Spi_send_dummy(spi);
 
         spi->rx.data = (uint8_t *)&read;
@@ -77,7 +77,7 @@ uint8_t Arduino_read_analog(Spi_handle_t *spi, Arduino_analog_pin_e pin)
     if (send_command(spi, ARDUINO_COMMAND_SENSOR_READ, (uint8_t *)&pin, sizeof(uint8_t)))
     {
         Spi_read_dummy(spi);
-        Utils_delay();
+        utils_delay();
         Spi_send_dummy(spi);
 
         spi->rx.data = &analog_read;
