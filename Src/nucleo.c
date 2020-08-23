@@ -25,5 +25,5 @@ void nucleo_init(void)
 
 bool nucleo_is_button_pressed(void)
 {
-    return GPIO_BUTTON_STATE_HIGH == gpio_read_pin(&g_button);
+    return GPIO_BUTTON_STATE_LOW == gpio_read_pin(&g_button);
 }

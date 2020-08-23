@@ -21,8 +21,8 @@ void gpio_init(const gpio_handle_t *p_handle)
     /* Configures mode. */
     if (p_handle->cfg.mode <= GPIO_MODE_ANALOG)
     {
-        p_handle->p_reg->MODER &= ~(0x3u << (2 * p_handle->cfg.number));
-        p_handle->p_reg->MODER |= p_handle->cfg.mode << (2 * p_handle->cfg.number);
+        p_handle->p_reg->MODER &= ~(0x3u << (2u * p_handle->cfg.number));
+        p_handle->p_reg->MODER |= p_handle->cfg.mode << (2u * p_handle->cfg.number);
     }
     else
     {
@@ -229,7 +229,7 @@ uint16_t gpio_read_port(gpio_reg_t *p_reg)
  * @param p_handle 
  * @param value 
  */
-void gpio_write_to_pin(gpio_handle_t *p_handle, gpio_pin_status_t value)
+void gpio_write_pin(gpio_handle_t *p_handle, gpio_pin_status_t value)
 {
     if (value == GPIO_PIN_STATUS_SET)
     {
@@ -247,7 +247,7 @@ void gpio_write_to_pin(gpio_handle_t *p_handle, gpio_pin_status_t value)
  * @param gpiox 
  * @param value 
  */
-void gpio_write_to_output_port(gpio_reg_t *p_reg, uint16_t value)
+void gpio_write_port(gpio_reg_t *p_reg, uint16_t value)
 {
     p_reg->ODR = value;
 }

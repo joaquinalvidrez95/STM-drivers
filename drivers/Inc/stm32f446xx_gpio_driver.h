@@ -104,8 +104,8 @@ typedef struct
 
 typedef struct
 {
-    gpio_reg_t *const p_reg;
-    const gpio_cfg_t cfg;
+    gpio_reg_t *p_reg;
+    gpio_cfg_t cfg;
 } gpio_handle_t;
 
 typedef enum
@@ -121,8 +121,8 @@ void gpio_enable_peripheral_clock(gpio_reg_t *p_reg, bool enable);
 
 gpio_button_state_t gpio_read_pin(const gpio_handle_t *p_handle);
 uint16_t gpio_read_port(gpio_reg_t *p_reg);
-void gpio_write_to_pin(gpio_handle_t *p_handle, gpio_pin_status_t value);
-void gpio_write_to_output_port(gpio_reg_t *p_reg, uint16_t value);
+void gpio_write_pin(gpio_handle_t *p_handle, gpio_pin_status_t value);
+void gpio_write_port(gpio_reg_t *p_reg, uint16_t value);
 void gpio_toggle_pin(gpio_handle_t *p_handle);
 
 void gpio_config_irq(irq_number_t irq_number, bool enable);
