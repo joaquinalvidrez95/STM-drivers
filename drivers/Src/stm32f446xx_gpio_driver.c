@@ -209,7 +209,7 @@ void gpio_enable_peripheral_clock(gpio_reg_t *p_reg, bool b_enable)
  */
 gpio_button_state_t gpio_read_pin(const gpio_handle_t *p_handle)
 {
-    return (gpio_button_state_t)((p_handle->p_reg->IDR >> p_handle->cfg.number) & 0x00000001u);
+    return (gpio_button_state_t)((p_handle->p_reg->IDR >> p_handle->cfg.number) & 1u);
 }
 
 /**

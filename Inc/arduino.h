@@ -54,6 +54,7 @@ typedef enum
 } Arduino_digital_pin_e;
 
 #define ARDUINO_ID_SIZE 10u
+#define ARDUINO_I2C_ADDRESS (0x68u)
 
 Arduino_digital_status_e Arduino_read_digital(Spi_handle_t *spi, Arduino_digital_pin_e pin);
 

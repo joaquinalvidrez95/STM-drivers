@@ -26,6 +26,7 @@
 #define MAIN_008_SPI_ARDUINO 5
 #define MAIN_009_SPI_ARDUINO_IT 6
 #define MAIN_010_I2C_MASTER_TX 7
+#define MAIN_011_I2C_MASTER_RX (8)
 
 #define MAIN MAIN_010_I2C_MASTER_TX
 
@@ -452,24 +453,13 @@ int main()
 
 #elif MAIN == MAIN_010_I2C_MASTER_TX
 
-static void init(const i2c_handle_t *p_handle);
-static void init_pins(void);
+static void init(i2c_handle_t *p_handle);
 
-#define ARDUINO_ADDRESS (0x68u)
 #define NUM_MESSAGES (3u)
-#define NUCLEO_ADDRESS (0x61u)
 
 int main()
 {
-    const i2c_handle_t i2c_handle = {
-        .p_reg = I2C1,
-        .cfg = {
-            .ack_control = I2C_ACK_CONTROL_ENABLE,
-            .device_address = NUCLEO_ADDRESS,
-            .fm_duty_cycle = I2C_DUTY_2,
-            .scl_speed = I2C_SCL_SPEED_STANDARD_MODE,
-        },
-    };
+    i2c_handle_t i2c_handle;
 
     init(&i2c_handle);
     uint8_t message[NUM_MESSAGES][10] = {"hola man\n", "middle", "bye"};
@@ -486,52 +476,17 @@ int main()
                            &(i2c_message_t){
                                .buffer = &message[idx][0],
                                .size = strlen(message[idx]),
-                               .slave_address = ARDUINO_ADDRESS,
+                               .slave_address = ARDUINO_I2C_ADDRESS,
                            });
         idx++;
         idx %= NUM_MESSAGES;
     }
 }
 
-static void init(const i2c_handle_t *p_handle)
+static void init(i2c_handle_t *p_handle)
 {
-    nucleo_init();
-    init_pins();
-    i2c_init(p_handle);
-    i2c_enable_peripheral(p_handle->p_reg, true);
-}
-
-static void init_pins(void)
-{
-    const gpio_handle_t scl_pin = {
-        .p_reg = GPIOB,
-        .cfg = {
-            .mode = GPIO_MODE_ALT_FN,
-            .out_type = GPIO_OUT_TYPE_OPEN_DRAIN,
-            .pull_mode = GPIO_PULL_MODE_UP,
-            .alt_fun_mode = GPIO_ALTERNATE_FUNCTION_4,
-            .number = GPIO_PIN_8,
-            .speed = GPIO_SPEED_FAST,
-        },
-    };
-
-    const gpio_handle_t sda_pin = {
-        .p_reg = GPIOB,
-        .cfg = {
-            .mode = GPIO_MODE_ALT_FN,
-            .out_type = GPIO_OUT_TYPE_OPEN_DRAIN,
-            .pull_mode = GPIO_PULL_MODE_UP,
-            .alt_fun_mode = GPIO_ALTERNATE_FUNCTION_4,
-            .number = GPIO_PIN_9,
-            .speed = GPIO_SPEED_FAST,
-        },
-    };
-
-    /* SCL */
-    gpio_init(&scl_pin);
-
-    /* SDA */
-    gpio_init(&sda_pin);
+    nucleo_init_button();
+    nucleo_init_i2c(p_handle);
 }
 
 #endif

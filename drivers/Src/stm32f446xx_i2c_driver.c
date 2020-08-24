@@ -109,17 +109,17 @@ void i2c_init(const i2c_handle_t *p_handle)
     p_handle->p_reg->TRISE = calculate_rise_time(&p_handle->cfg, pclk1);
 }
 
-void i2c_send_as_master(const i2c_handle_t *p_handle, const i2c_message_t *p_message)
+void i2c_send_as_master(const i2c_handle_t *p_handle, const i2c_message_t *p_msg)
 {
     generate_blocking_start_condition(p_handle->p_reg);
 
-    execute_blocking_address_phase(p_handle->p_reg, p_message->slave_address, ADDRESS_PHASE_WRITE);
+    execute_blocking_address_phase(p_handle->p_reg, p_msg->slave_address, ADDRESS_PHASE_WRITE);
     clear_addr(p_handle->p_reg);
 
-    for (uint8_t data_idx = 0u; data_idx < p_message->size; data_idx++)
+    for (uint8_t data_idx = 0u; data_idx < p_msg->size; data_idx++)
     {
         wait_until_transmitter_data_register_empty(p_handle->p_reg);
-        p_handle->p_reg->DR = p_message->buffer[data_idx];
+        p_handle->p_reg->DR = p_msg->buffer[data_idx];
     }
 
     wait_until_transmitter_data_register_empty(p_handle->p_reg);
@@ -129,30 +129,30 @@ void i2c_send_as_master(const i2c_handle_t *p_handle, const i2c_message_t *p_mes
     }
 }
 
-void i2c_receive_as_master(const i2c_handle_t *p_handle, i2c_message_t *p_message)
+void i2c_receive_as_master(const i2c_handle_t *p_handle, i2c_message_t *p_msg)
 {
     generate_blocking_start_condition(p_handle->p_reg);
 
-    execute_blocking_address_phase(p_handle->p_reg, p_message->slave_address, ADDRESS_PHASE_READ);
+    execute_blocking_address_phase(p_handle->p_reg, p_msg->slave_address, ADDRESS_PHASE_READ);
 
-    if (1u == p_message->size)
+    if (1u == p_msg->size)
     {
         set_ack(p_handle->p_reg, I2C_ACK_CONTROL_DISABLE);
         clear_addr(p_handle->p_reg);
         wait_until_receiver_data_register_not_empty(p_handle->p_reg);
-        p_message->buffer[0] = p_handle->p_reg->DR;
+        p_msg->buffer[0] = p_handle->p_reg->DR;
     }
-    else if (1u < p_message->size)
+    else if (1u < p_msg->size)
     {
         clear_addr(p_handle->p_reg);
-        for (uint8_t buf_idx; buf_idx < p_message->size; buf_idx++)
+        for (uint8_t buf_idx; buf_idx < p_msg->size; buf_idx++)
         {
             wait_until_receiver_data_register_not_empty(p_handle->p_reg);
-            if ((p_message->size - 2u) == buf_idx)
+            if ((p_msg->size - 2u) == buf_idx)
             {
                 set_ack(p_handle->p_reg, I2C_ACK_CONTROL_DISABLE);
             }
-            p_message->buffer[buf_idx] = p_handle->p_reg->DR;
+            p_msg->buffer[buf_idx] = p_handle->p_reg->DR;
         }
     }
     else
