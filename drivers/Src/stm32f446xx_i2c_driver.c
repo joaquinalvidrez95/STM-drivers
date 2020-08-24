@@ -3,6 +3,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include "stm32f446xx_rcc_driver.h"
+#include "utils.h"
 
 #define CCR_FAST_STANDARD_MODE (1u << 15u)
 #define MASK_CCR (0xFFFu)
@@ -82,15 +83,18 @@ static inline bool is_address_phase_done(const volatile i2c_reg_t *p_reg);
 static inline void execute_address_phase(volatile i2c_reg_t *p_reg, uint8_t slave_address, address_phase_t operation);
 static inline void execute_blocking_address_phase(volatile i2c_reg_t *p_reg, uint8_t slave_address, address_phase_t operation);
 static inline void clear_addr(const volatile i2c_reg_t *p_reg);
-static inline bool is_data_register_empty(const volatile i2c_reg_t *p_reg);
+static inline bool is_transmitter_data_register_empty(const volatile i2c_reg_t *p_reg);
+static inline void wait_until_transmitter_data_register_empty(const volatile i2c_reg_t *p_reg);
 static inline bool is_byte_transfer_finished(const volatile i2c_reg_t *p_reg);
 static inline uint16_t calculate_rise_time(const i2c_cfg_t *p_cfg, uint32_t pclk1);
+static inline void set_ack(volatile i2c_reg_t *p_reg, i2c_ack_control_t ack);
+static inline void wait_until_receiver_data_register_not_empty(const volatile i2c_reg_t *p_reg);
 
 void i2c_init(const i2c_handle_t *p_handle)
 {
     i2c_enable_peripheral_clock(p_handle->p_reg, true);
     /* Configures ACK control bit */
-    p_handle->p_reg->CR1 |= (uint16_t)p_handle->cfg.ack_control << BIT_POSITION_CR1_ACK;
+    set_ack(p_handle->p_reg, p_handle->cfg.ack_control);
 
     const uint32_t pclk1 = rcc_get_pclk1();
 
@@ -114,15 +118,11 @@ void i2c_send_as_master(const i2c_handle_t *p_handle, const i2c_message_t *p_mes
 
     for (uint8_t data_idx = 0u; data_idx < p_message->size; data_idx++)
     {
-        while (!is_data_register_empty(p_handle->p_reg))
-        {
-        }
+        wait_until_transmitter_data_register_empty(p_handle->p_reg);
         p_handle->p_reg->DR = p_message->buffer[data_idx];
     }
 
-    while (!is_data_register_empty(p_handle->p_reg))
-    {
-    }
+    wait_until_transmitter_data_register_empty(p_handle->p_reg);
 
     while (!is_byte_transfer_finished(p_handle->p_reg))
     {
@@ -131,11 +131,43 @@ void i2c_send_as_master(const i2c_handle_t *p_handle, const i2c_message_t *p_mes
 
 void i2c_receive_as_master(const i2c_handle_t *p_handle, i2c_message_t *p_message)
 {
+    generate_blocking_start_condition(p_handle->p_reg);
+
+    execute_blocking_address_phase(p_handle->p_reg, p_message->slave_address, ADDRESS_PHASE_READ);
+
+    if (1u == p_message->size)
+    {
+        set_ack(p_handle->p_reg, I2C_ACK_CONTROL_DISABLE);
+        clear_addr(p_handle->p_reg);
+        wait_until_receiver_data_register_not_empty(p_handle->p_reg);
+        p_message->buffer[0] = p_handle->p_reg->DR;
+    }
+    else if (1u < p_message->size)
+    {
+        clear_addr(p_handle->p_reg);
+        for (uint8_t buf_idx; buf_idx < p_message->size; buf_idx++)
+        {
+            wait_until_receiver_data_register_not_empty(p_handle->p_reg);
+            if ((p_message->size - 2u) == buf_idx)
+            {
+                set_ack(p_handle->p_reg, I2C_ACK_CONTROL_DISABLE);
+            }
+            p_message->buffer[buf_idx] = p_handle->p_reg->DR;
+        }
+    }
+    else
+    {
+    }
+
+    if (I2C_ACK_CONTROL_ENABLE == p_handle->cfg.ack_control)
+    {
+        set_ack(p_handle->p_reg, I2C_ACK_CONTROL_ENABLE);
+    }
 }
 
-void i2c_enable_peripheral_clock(volatile i2c_reg_t *p_reg, bool enable)
+void i2c_enable_peripheral_clock(volatile i2c_reg_t *p_reg, bool b_enable)
 {
-    if (enable == true)
+    if (b_enable)
     {
         if (p_reg == I2C1)
         {
@@ -167,9 +199,9 @@ void i2c_enable_peripheral_clock(volatile i2c_reg_t *p_reg, bool enable)
     }
 }
 
-void i2c_enable_peripheral(volatile i2c_reg_t *p_reg, bool enable)
+void i2c_enable_peripheral(volatile i2c_reg_t *p_reg, bool b_enable)
 {
-    if (enable)
+    if (b_enable)
     {
         p_reg->CR1 |= (uint16_t)CR1_PE;
     }
@@ -244,7 +276,7 @@ static inline void generate_stop_condition(volatile i2c_reg_t *p_reg)
 
 static inline bool is_start_condition_generated(const volatile i2c_reg_t *p_reg)
 {
-    return (p_reg->SR1 & SR1_SB) == SR1_SB;
+    return utils_is_bit_set_u16(p_reg->SR1, SR1_SB);
 }
 
 static inline void execute_address_phase(volatile i2c_reg_t *p_reg, uint8_t slave_address, address_phase_t operation)
@@ -274,7 +306,7 @@ static inline void execute_blocking_address_phase(volatile i2c_reg_t *p_reg, uin
 
 static inline bool is_address_phase_done(const volatile i2c_reg_t *p_reg)
 {
-    return (p_reg->SR1 & SR1_ADDR) == SR1_ADDR;
+    return utils_is_bit_set_u16(p_reg->SR1, SR1_ADDR);
 }
 
 static inline void clear_addr(const volatile i2c_reg_t *p_reg)
@@ -284,14 +316,21 @@ static inline void clear_addr(const volatile i2c_reg_t *p_reg)
     (void)dummy_read;
 }
 
-static inline bool is_data_register_empty(const volatile i2c_reg_t *p_reg)
+static inline bool is_transmitter_data_register_empty(const volatile i2c_reg_t *p_reg)
 {
-    return (p_reg->SR1 & SR1_TXE) == SR1_TXE;
+    return utils_is_bit_set_u16(p_reg->SR1, SR1_TXE);
+}
+
+static inline void wait_until_transmitter_data_register_empty(const volatile i2c_reg_t *p_reg)
+{
+    while (!is_transmitter_data_register_empty(p_reg))
+    {
+    }
 }
 
 static inline bool is_byte_transfer_finished(const volatile i2c_reg_t *p_reg)
 {
-    return (p_reg->SR1 & SR1_BTF) == SR1_BTF;
+    return utils_is_bit_set_u16(p_reg->SR1, SR1_BTF);
 }
 
 static inline uint16_t calculate_rise_time(const i2c_cfg_t *p_cfg, uint32_t pclk1)
@@ -306,4 +345,28 @@ static inline uint16_t calculate_rise_time(const i2c_cfg_t *p_cfg, uint32_t pclk
         rise_time_reg = (uint16_t)(pclk1 * 3u / 10000000u) + 1u;
     }
     return rise_time_reg & 0x3Fu;
+}
+
+static inline void set_ack(volatile i2c_reg_t *p_reg, i2c_ack_control_t ack)
+{
+    switch (ack)
+    {
+    case I2C_ACK_CONTROL_DISABLE:
+        p_reg->CR1 &= ~((uint16_t)(1u << BIT_POSITION_CR1_ACK));
+        break;
+
+    case I2C_ACK_CONTROL_ENABLE:
+        p_reg->CR1 |= (uint16_t)(1u << BIT_POSITION_CR1_ACK);
+        break;
+
+    default:
+        break;
+    }
+}
+
+static inline void wait_until_receiver_data_register_not_empty(const volatile i2c_reg_t *p_reg)
+{
+    while (!utils_is_bit_set_u16(p_reg->SR1, SR1_RXNE))
+    {
+    }
 }

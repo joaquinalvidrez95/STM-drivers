@@ -470,7 +470,8 @@ int main()
     };
 
     init(&i2c_handle);
-    uint8_t message[] = "hola man\n";
+    uint8_t message[][10] = {"hola man\n", "middle", "bye"};
+    uint8_t idx = 0u;
 
     for (;;)
     {
@@ -481,10 +482,12 @@ int main()
 
         i2c_send_as_master(&i2c_handle,
                            &(i2c_message_t){
-                               .buffer = &message[0],
-                               .size = sizeof(message),
+                               .buffer = &message[idx][0],
+                               .size = strlen(message[idx]),
                                .slave_address = ARDUINO_ADDRESS,
                            });
+        idx++;
+        idx %= 3u;
     }
 }
 

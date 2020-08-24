@@ -15,3 +15,4 @@ void utils_delay()
     {
     }
 }
+bool utils_is_bit_set_u16(uint16_t reg, uint16_t mask);
