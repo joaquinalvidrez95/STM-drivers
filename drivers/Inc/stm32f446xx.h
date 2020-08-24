@@ -188,18 +188,19 @@ typedef struct
 	const uint16_t _unused_2;
 	uint16_t OAR2;
 	const uint16_t _unused_3;
-	uint16_t DR;
-	const uint16_t _unused_4;
-	uint16_t SR1;
+	uint8_t DR;
+	const uint8_t _unused_4;
 	const uint16_t _unused_5;
-	uint16_t SR2;
+	uint16_t SR1;
 	const uint16_t _unused_6;
-	uint16_t CCR;
+	uint16_t SR2;
 	const uint16_t _unused_7;
-	uint16_t TRISE;
+	uint16_t CCR;
 	const uint16_t _unused_8;
-	uint16_t FLTR;
+	uint16_t TRISE;
 	const uint16_t _unused_9;
+	uint16_t FLTR;
+	const uint16_t _unused_10;
 } i2c_reg_t;
 
 typedef struct
@@ -396,12 +397,6 @@ typedef enum
 		(RCC->APB_RSTR[1] |= (1u << 13u));  \
 		(RCC->APB_RSTR[1] &= ~(1u << 13u)); \
 	} while (0u)
-
-typedef enum
-{
-	En_status_disable_ = 0u,
-	En_status_enable = 1u
-} En_status_t;
 
 #define SET ENABLE
 #define RESET DISABLE

@@ -43,7 +43,7 @@ int main()
     led.cfg.out_type = GPIO_OUT_TYPE_PUSH_PULL;
     led.cfg.pull_mode = GPIO_PULL_MODE_NONE;
 
-    gpio_enable_peripheral_clock(led.p_reg, En_status_enable);
+    gpio_enable_peripheral_clock(led.p_reg, true);
     gpio_init(&led);
 
     while (1)

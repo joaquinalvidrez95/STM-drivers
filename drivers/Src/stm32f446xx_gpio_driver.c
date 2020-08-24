@@ -124,11 +124,11 @@ void gpio_deinit(gpio_reg_t *p_reg)
  * @brief 
  * 
  * @param gpiox 
- * @param enable 
+ * @param b_enable 
  */
-void gpio_enable_peripheral_clock(gpio_reg_t *p_reg, bool enable)
+void gpio_enable_peripheral_clock(gpio_reg_t *p_reg, bool b_enable)
 {
-    if (enable == En_status_enable)
+    if (b_enable)
     {
         if (p_reg == GPIOA)
         {
@@ -268,11 +268,11 @@ void gpio_toggle_pin(gpio_handle_t *p_handle)
  * 
  * @param irq_number 
  * @param priority 
- * @param enable 
+ * @param b_enable 
  */
-void gpio_config_irq(irq_number_t irq_number, bool enable)
+void gpio_config_irq(irq_number_t irq_number, bool b_enable)
 {
-    if (enable == true)
+    if (b_enable == true)
     {
         if (irq_number <= 31u)
         {
