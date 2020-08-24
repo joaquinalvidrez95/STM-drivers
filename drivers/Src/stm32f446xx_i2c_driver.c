@@ -109,7 +109,7 @@ void i2c_init(const i2c_handle_t *p_handle)
     p_handle->p_reg->TRISE = calculate_rise_time(&p_handle->cfg, pclk1);
 }
 
-void i2c_send_as_master(const i2c_handle_t *p_handle, const i2c_message_t *p_msg)
+void i2c_send_as_master(const i2c_handle_t *p_handle, const i2c_msg_t *p_msg)
 {
     generate_blocking_start_condition(p_handle->p_reg);
 
@@ -129,7 +129,7 @@ void i2c_send_as_master(const i2c_handle_t *p_handle, const i2c_message_t *p_msg
     }
 }
 
-void i2c_receive_as_master(const i2c_handle_t *p_handle, i2c_message_t *p_msg)
+void i2c_receive_as_master(const i2c_handle_t *p_handle, i2c_msg_t *p_msg)
 {
     generate_blocking_start_condition(p_handle->p_reg);
 

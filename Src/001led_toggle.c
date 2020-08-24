@@ -28,7 +28,7 @@
 #define MAIN_010_I2C_MASTER_TX 7
 #define MAIN_011_I2C_MASTER_RX (8)
 
-#define MAIN MAIN_010_I2C_MASTER_TX
+#define MAIN MAIN_011_I2C_MASTER_RX
 
 extern void initialise_monitor_handles();
 
@@ -172,7 +172,7 @@ static void init_gpio(Spi_pins_t *pins)
     // gpio_init(pins->nss.p_reg);
 }
 
-void init_spi(Spi_handle_t *handle)
+void init_spi(spi_handle_t *handle)
 {
     handle->p_reg = SPI1;
     handle->cfg.device_mode = SPI_DEVICE_MODE_MASTER;
@@ -191,7 +191,7 @@ int main()
     Spi_pins_t gpio_spi = {0u};
     init_gpio(&gpio_spi);
 
-    Spi_handle_t spi = {0u};
+    spi_handle_t spi = {0u};
     init_spi(&spi);
     Spi_enable_ssi(spi.p_reg, true);
     Spi_enable_peripheral(spi.p_reg, true);
@@ -248,7 +248,7 @@ static void init_gpio(Spi_pins_t *pins)
     gpio_init(&pins->nss);
 }
 
-void init_spi(Spi_handle_t *handle)
+void init_spi(spi_handle_t *handle)
 {
     handle->p_reg = SPI2;
     handle->cfg.device_mode = SPI_DEVICE_MODE_MASTER;
@@ -279,7 +279,7 @@ int main()
     Spi_pins_t gpio_spi = {0u};
     init_gpio(&gpio_spi);
 
-    Spi_handle_t spi = {0u};
+    spi_handle_t spi = {0u};
     init_spi(&spi);
     Spi_enable_ssoe(spi.p_reg, true);
 
@@ -364,7 +364,7 @@ static void init_gpio(Spi_pins_t *pins)
     gpio_init(&pins->nss);
 }
 
-void init_spi(Spi_handle_t *handle)
+void init_spi(spi_handle_t *handle)
 {
     handle->p_reg = SPI2;
     handle->cfg.device_mode = SPI_DEVICE_MODE_MASTER;
@@ -397,7 +397,7 @@ int main()
     Spi_pins_t gpio_spi = {0u};
     init_gpio(&gpio_spi);
 
-    Spi_handle_t spi = {0u};
+    spi_handle_t spi = {0u};
     init_spi(&spi);
     Spi_enable_ssoe(spi.p_reg, true);
 
@@ -413,33 +413,33 @@ int main()
 
         Spi_enable_peripheral(spi.p_reg, true);
 
-        Arduino_write_led(&spi, ARDUINO_DIGITAL_STATUS_ON, LED_PIN);
+        arduino_write_led(&spi, ARDUINO_DIGITAL_STATUS_ON, LED_PIN);
 
         while (GPIO_BUTTON_STATE_HIGH == gpio_read_pin(&button))
         {
         }
         utils_delay();
 
-        uint8_t value = Arduino_read_analog(&spi, ARDUINO_ANALOG_PIN_0);
+        uint8_t value = arduino_read_analog(&spi, ARDUINO_ANALOG_PIN_0);
 
         while (GPIO_BUTTON_STATE_HIGH == gpio_read_pin(&button))
         {
         }
         utils_delay();
-        value = Arduino_read_digital(&spi, LED_PIN);
+        value = arduino_read_digital(&spi, LED_PIN);
 
         while (GPIO_BUTTON_STATE_HIGH == gpio_read_pin(&button))
         {
         }
         utils_delay();
-        Arduino_print(&spi, "hello Arduino");
+        arduino_print(&spi, "hello Arduino");
 
         while (GPIO_BUTTON_STATE_HIGH == gpio_read_pin(&button))
         {
         }
         utils_delay();
         char arduino_id[ARDUINO_ID_SIZE + 1u] = {'\0'};
-        Arduino_read_id(&spi, arduino_id, sizeof(arduino_id));
+        arduino_read_id(&spi, arduino_id, sizeof(arduino_id));
 
         while (spi.p_reg->SR.BSY)
         {
@@ -473,13 +473,59 @@ int main()
         utils_delay();
 
         i2c_send_as_master(&i2c_handle,
-                           &(i2c_message_t){
+                           &(i2c_msg_t){
                                .buffer = &message[idx][0],
                                .size = strlen(message[idx]),
                                .slave_address = ARDUINO_I2C_ADDRESS,
                            });
         idx++;
         idx %= NUM_MESSAGES;
+    }
+}
+
+static void init(i2c_handle_t *p_handle)
+{
+    nucleo_init_button();
+    nucleo_init_i2c(p_handle);
+}
+
+#elif MAIN == MAIN_011_I2C_MASTER_RX
+
+static void init(i2c_handle_t *p_handle);
+
+#define BUFFER_SIZE (32u)
+
+int main()
+{
+    i2c_handle_t i2c_handle;
+
+    init(&i2c_handle);
+
+    uint8_t buffer[BUFFER_SIZE] = {0u};
+
+    for (;;)
+    {
+        while (!nucleo_is_button_pressed())
+        {
+        }
+        utils_delay();
+
+        const uint8_t msg_length = arduino_i2c_get_length(&i2c_handle);
+
+        i2c_send_as_master(&i2c_handle,
+                           &(const i2c_msg_t){
+                               .buffer = &(uint8_t){ARDUINO_I2C_COMMAND_READ_MSG},
+                               .size = sizeof(uint8_t),
+                               .slave_address = ARDUINO_I2C_ADDRESS,
+                           });
+
+        i2c_receive_as_master(&i2c_handle,
+                              &(i2c_msg_t){
+                                  .size = msg_length,
+                                  .buffer = &buffer[0],
+                                  .slave_address = ARDUINO_I2C_ADDRESS,
+                              });
+
     }
 }
 

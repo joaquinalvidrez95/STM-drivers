@@ -105,9 +105,9 @@ typedef struct
     Spi_config_t cfg;
     Spi_buffer_t tx;
     Spi_buffer_t rx;
-} Spi_handle_t;
+} spi_handle_t;
 
-void Spi_init(Spi_handle_t *handle);
+void Spi_init(spi_handle_t *handle);
 void Spi_deinit(Spi_reg_t *p_reg);
 
 void Spi_peripheral_clock_control(Spi_reg_t *p_reg, bool enable);
@@ -115,23 +115,23 @@ void Spi_enable_peripheral(Spi_reg_t *p_reg, bool enable);
 void Spi_enable_ssi(Spi_reg_t *p_reg, bool enable);
 void Spi_enable_ssoe(Spi_reg_t *p_reg, bool enable);
 
-void Spi_send(Spi_handle_t *handle);
-void Spi_receive(Spi_handle_t *handle);
+void Spi_send(spi_handle_t *handle);
+void Spi_receive(spi_handle_t *handle);
 
-void Spi_send_interrupt(Spi_handle_t *handle);
-void Spi_receive_interrupt(Spi_handle_t *handle);
+void Spi_send_interrupt(spi_handle_t *handle);
+void Spi_receive_interrupt(spi_handle_t *handle);
 
 void Spi_config_irq(irq_number_t irq_number, bool enable);
 void Spi_config_irq_priority(irq_number_t irq_number, nvic_irq_priority_t priority);
-void Spi_handle_irq(Spi_handle_t *handle);
+void Spi_handle_irq(spi_handle_t *handle);
 
 void Spi_clear_ovr_flag(Spi_reg_t *p_reg);
-void Spi_close_transmission(Spi_handle_t *handle);
-void Spi_close_reception(Spi_handle_t *handle);
+void Spi_close_transmission(spi_handle_t *handle);
+void Spi_close_reception(spi_handle_t *handle);
 
-void Spi_on_app_event(Spi_handle_t *handle, Spi_event_e event);
+void Spi_on_app_event(spi_handle_t *handle, Spi_event_e event);
 
-void Spi_read_dummy(Spi_handle_t *spi);
-void Spi_send_dummy(Spi_handle_t *spi);
+void Spi_read_dummy(spi_handle_t *spi);
+void Spi_send_dummy(spi_handle_t *spi);
 
 #endif /* INC_STM32F446XX_SPI_DRIVER_H_ */
