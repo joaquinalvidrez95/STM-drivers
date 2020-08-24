@@ -456,6 +456,8 @@ static void init(const i2c_handle_t *p_handle);
 static void init_pins(void);
 
 #define ARDUINO_ADDRESS (0x68u)
+#define NUM_MESSAGES (3u)
+#define NUCLEO_ADDRESS (0x61u)
 
 int main()
 {
@@ -463,14 +465,14 @@ int main()
         .p_reg = I2C1,
         .cfg = {
             .ack_control = I2C_ACK_CONTROL_ENABLE,
-            .device_address = 0x61u,
+            .device_address = NUCLEO_ADDRESS,
             .fm_duty_cycle = I2C_DUTY_2,
             .scl_speed = I2C_SCL_SPEED_STANDARD_MODE,
         },
     };
 
     init(&i2c_handle);
-    uint8_t message[][10] = {"hola man\n", "middle", "bye"};
+    uint8_t message[NUM_MESSAGES][10] = {"hola man\n", "middle", "bye"};
     uint8_t idx = 0u;
 
     for (;;)
@@ -487,7 +489,7 @@ int main()
                                .slave_address = ARDUINO_ADDRESS,
                            });
         idx++;
-        idx %= 3u;
+        idx %= NUM_MESSAGES;
     }
 }
 
