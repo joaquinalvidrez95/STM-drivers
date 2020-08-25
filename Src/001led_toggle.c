@@ -467,10 +467,7 @@ int main()
 
     for (;;)
     {
-        while (!nucleo_is_button_pressed())
-        {
-        }
-        utils_delay();
+        wait_till_button_pressed();
 
         i2c_send_as_master(&i2c_handle,
                            &(i2c_msg_t){
@@ -505,10 +502,7 @@ int main()
 
     for (;;)
     {
-        while (!nucleo_is_button_pressed())
-        {
-        }
-        utils_delay();
+        wait_till_button_pressed();
 
         const uint8_t msg_length = arduino_i2c_get_length(&i2c_handle);
 
@@ -526,11 +520,13 @@ int main()
                                   .slave_address = ARDUINO_I2C_ADDRESS,
                               });
 
+        printf("Arduino's message: %s", &buffer[0]);
     }
 }
 
 static void init(i2c_handle_t *p_handle)
 {
+    initialise_monitor_handles();
     nucleo_init_button();
     nucleo_init_i2c(p_handle);
 }
