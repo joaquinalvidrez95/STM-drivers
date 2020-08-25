@@ -28,7 +28,7 @@
 #define MAIN_010_I2C_MASTER_TX 7
 #define MAIN_011_I2C_MASTER_RX (8)
 
-#define MAIN MAIN_011_I2C_MASTER_RX
+#define MAIN MAIN_010_I2C_MASTER_TX
 
 extern void initialise_monitor_handles();
 
@@ -474,7 +474,8 @@ int main()
                                .buffer = &message[idx][0],
                                .size = strlen(message[idx]),
                                .slave_address = ARDUINO_I2C_ADDRESS,
-                           });
+                           },
+                           false);
         idx++;
         idx %= NUM_MESSAGES;
     }
@@ -511,14 +512,16 @@ int main()
                                .buffer = &(uint8_t){ARDUINO_I2C_COMMAND_READ_MSG},
                                .size = sizeof(uint8_t),
                                .slave_address = ARDUINO_I2C_ADDRESS,
-                           });
+                           },
+                           false);
 
         i2c_receive_as_master(&i2c_handle,
                               &(i2c_msg_t){
                                   .size = msg_length,
                                   .buffer = &buffer[0],
                                   .slave_address = ARDUINO_I2C_ADDRESS,
-                              });
+                              },
+                              false);
 
         printf("Arduino's message: %s", &buffer[0]);
     }

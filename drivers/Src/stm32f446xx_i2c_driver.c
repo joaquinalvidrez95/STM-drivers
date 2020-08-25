@@ -108,7 +108,7 @@ void i2c_init(const i2c_handle_t *p_handle)
     p_handle->p_reg->TRISE = calculate_rise_time(&p_handle->cfg, pclk1);
 }
 
-void i2c_send_as_master(const i2c_handle_t *p_handle, const i2c_msg_t *p_msg)
+void i2c_send_as_master(const i2c_handle_t *p_handle, const i2c_msg_t *p_msg, bool b_with_repeated_start)
 {
     generate_blocking_start_condition(p_handle->p_reg);
 
@@ -126,9 +126,13 @@ void i2c_send_as_master(const i2c_handle_t *p_handle, const i2c_msg_t *p_msg)
     while (!is_byte_transfer_finished(p_handle->p_reg))
     {
     }
+    if (!b_with_repeated_start)
+    {
+        generate_stop_condition(p_handle->p_reg);
+    }
 }
 
-void i2c_receive_as_master(const i2c_handle_t *p_handle, i2c_msg_t *p_msg)
+void i2c_receive_as_master(const i2c_handle_t *p_handle, i2c_msg_t *p_msg, bool b_with_repeated_start)
 {
     generate_blocking_start_condition(p_handle->p_reg);
 
@@ -139,7 +143,10 @@ void i2c_receive_as_master(const i2c_handle_t *p_handle, i2c_msg_t *p_msg)
         i2c_set_ack(p_handle->p_reg, I2C_ACK_CONTROL_DISABLE);
         clear_addr(p_handle->p_reg);
         wait_until_rx_data_reg_not_empty(p_handle->p_reg);
-        generate_stop_condition(p_handle->p_reg);
+        if (!b_with_repeated_start)
+        {
+            generate_stop_condition(p_handle->p_reg);
+        }
         p_msg->buffer[0] = p_handle->p_reg->DR;
     }
     else if (1u < p_msg->size)
@@ -151,6 +158,10 @@ void i2c_receive_as_master(const i2c_handle_t *p_handle, i2c_msg_t *p_msg)
             if ((p_msg->size - 2u) == buf_idx)
             {
                 i2c_set_ack(p_handle->p_reg, I2C_ACK_CONTROL_DISABLE);
+                if (!b_with_repeated_start)
+                {
+                    generate_stop_condition(p_handle->p_reg);
+                }
             }
             p_msg->buffer[buf_idx] = p_handle->p_reg->DR;
         }

@@ -60,8 +60,8 @@ void i2c_deinit(volatile i2c_reg_t *p_reg);
 void I2c_enable_ssi(i2c_reg_t *p_reg, bool b_enable);
 void I2c_enable_ssoe(i2c_reg_t *p_reg, bool b_enable);
 
-void i2c_send_as_master(const i2c_handle_t *p_handle, const i2c_msg_t *p_msg);
-void i2c_receive_as_master(const i2c_handle_t *p_handle, i2c_msg_t *p_msg);
+void i2c_send_as_master(const i2c_handle_t *p_handle, const i2c_msg_t *p_msg, bool b_with_repeated_start);
+void i2c_receive_as_master(const i2c_handle_t *p_handle, i2c_msg_t *p_msg, bool b_with_repeated_start);
 
 void I2c_send_interrupt(i2c_handle_t *p_handle);
 void I2c_receive_interrupt(i2c_handle_t *p_handle);
