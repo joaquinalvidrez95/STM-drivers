@@ -15,10 +15,12 @@
 
 const static gpio_handle_t g_button = {
     .p_reg = GPIOC,
-    .cfg.number = GPIO_PIN_13,
-    .cfg.mode = GPIO_MODE_IN,
-    .cfg.speed = GPIO_SPEED_FAST,
-    .cfg.pull_mode = GPIO_PULL_MODE_NONE,
+    .cfg = {
+        .number = GPIO_PIN_13,
+        .mode = GPIO_MODE_IN,
+        .speed = GPIO_SPEED_FAST,
+        .pull_mode = GPIO_PULL_MODE_NONE,
+    },
 };
 
 void nucleo_init_button(void)
@@ -55,6 +57,7 @@ void nucleo_init_i2c(i2c_handle_t *p_handle)
 
     i2c_init(p_handle);
     i2c_enable_peripheral(p_handle->p_reg, true);
+    i2c_set_ack(p_handle->p_reg, I2C_ACK_CONTROL_ENABLE);
 }
 
 bool nucleo_is_button_pressed(void)

@@ -98,7 +98,7 @@ uint8_t arduino_i2c_get_length(const i2c_handle_t *p_handle)
                        });
 
     i2c_receive_as_master(p_handle,
-                          &(const i2c_msg_t){
+                          &(i2c_msg_t){
                               .slave_address = ARDUINO_I2C_ADDRESS,
                               .size = sizeof(length),
                               .buffer = &length,

@@ -73,7 +73,7 @@ typedef enum
     ADDRESS_PHASE_WRITE,
 } address_phase_t;
 
-static inline void reset_register(uint32_t bit);
+static inline void reset_reg(uint32_t bit);
 static inline uint16_t calculate_ccr(const i2c_cfg_t *p_cfg, uint32_t pclk1);
 static inline void generate_start_condition(volatile i2c_reg_t *p_reg);
 static inline void generate_blocking_start_condition(volatile i2c_reg_t *p_reg);
@@ -83,18 +83,17 @@ static inline bool is_address_phase_done(const volatile i2c_reg_t *p_reg);
 static inline void execute_address_phase(volatile i2c_reg_t *p_reg, uint8_t slave_address, address_phase_t operation);
 static inline void execute_blocking_address_phase(volatile i2c_reg_t *p_reg, uint8_t slave_address, address_phase_t operation);
 static inline void clear_addr(const volatile i2c_reg_t *p_reg);
-static inline bool is_transmitter_data_register_empty(const volatile i2c_reg_t *p_reg);
-static inline void wait_until_transmitter_data_register_empty(const volatile i2c_reg_t *p_reg);
+static inline bool is_tx_data_reg_empty(const volatile i2c_reg_t *p_reg);
+static inline void wait_until_tx_data_reg_empty(const volatile i2c_reg_t *p_reg);
 static inline bool is_byte_transfer_finished(const volatile i2c_reg_t *p_reg);
 static inline uint16_t calculate_rise_time(const i2c_cfg_t *p_cfg, uint32_t pclk1);
-static inline void set_ack(volatile i2c_reg_t *p_reg, i2c_ack_control_t ack);
-static inline void wait_until_receiver_data_register_not_empty(const volatile i2c_reg_t *p_reg);
+static inline void wait_until_rx_data_reg_not_empty(const volatile i2c_reg_t *p_reg);
 
 void i2c_init(const i2c_handle_t *p_handle)
 {
     i2c_enable_peripheral_clock(p_handle->p_reg, true);
     /* Configures ACK control bit */
-    set_ack(p_handle->p_reg, p_handle->cfg.ack_control);
+    i2c_set_ack(p_handle->p_reg, p_handle->cfg.ack_control);
 
     const uint32_t pclk1 = rcc_get_pclk1();
 
@@ -118,11 +117,11 @@ void i2c_send_as_master(const i2c_handle_t *p_handle, const i2c_msg_t *p_msg)
 
     for (uint8_t data_idx = 0u; data_idx < p_msg->size; data_idx++)
     {
-        wait_until_transmitter_data_register_empty(p_handle->p_reg);
+        wait_until_tx_data_reg_empty(p_handle->p_reg);
         p_handle->p_reg->DR = p_msg->buffer[data_idx];
     }
 
-    wait_until_transmitter_data_register_empty(p_handle->p_reg);
+    wait_until_tx_data_reg_empty(p_handle->p_reg);
 
     while (!is_byte_transfer_finished(p_handle->p_reg))
     {
@@ -137,20 +136,21 @@ void i2c_receive_as_master(const i2c_handle_t *p_handle, i2c_msg_t *p_msg)
 
     if (1u == p_msg->size)
     {
-        set_ack(p_handle->p_reg, I2C_ACK_CONTROL_DISABLE);
+        i2c_set_ack(p_handle->p_reg, I2C_ACK_CONTROL_DISABLE);
         clear_addr(p_handle->p_reg);
-        wait_until_receiver_data_register_not_empty(p_handle->p_reg);
+        wait_until_rx_data_reg_not_empty(p_handle->p_reg);
+        generate_stop_condition(p_handle->p_reg);
         p_msg->buffer[0] = p_handle->p_reg->DR;
     }
     else if (1u < p_msg->size)
     {
         clear_addr(p_handle->p_reg);
-        for (uint8_t buf_idx; buf_idx < p_msg->size; buf_idx++)
+        for (uint8_t buf_idx = 0u; buf_idx < p_msg->size; buf_idx++)
         {
-            wait_until_receiver_data_register_not_empty(p_handle->p_reg);
+            wait_until_rx_data_reg_not_empty(p_handle->p_reg);
             if ((p_msg->size - 2u) == buf_idx)
             {
-                set_ack(p_handle->p_reg, I2C_ACK_CONTROL_DISABLE);
+                i2c_set_ack(p_handle->p_reg, I2C_ACK_CONTROL_DISABLE);
             }
             p_msg->buffer[buf_idx] = p_handle->p_reg->DR;
         }
@@ -161,7 +161,7 @@ void i2c_receive_as_master(const i2c_handle_t *p_handle, i2c_msg_t *p_msg)
 
     if (I2C_ACK_CONTROL_ENABLE == p_handle->cfg.ack_control)
     {
-        set_ack(p_handle->p_reg, I2C_ACK_CONTROL_ENABLE);
+        i2c_set_ack(p_handle->p_reg, I2C_ACK_CONTROL_ENABLE);
     }
 }
 
@@ -215,22 +215,22 @@ void i2c_deinit(volatile i2c_reg_t *p_reg)
 {
     if (p_reg == I2C1)
     {
-        reset_register(1u << 21u);
+        reset_reg(1u << 21u);
     }
     else if (p_reg == I2C2)
     {
-        reset_register(1u << 22u);
+        reset_reg(1u << 22u);
     }
     else if (p_reg == I2C3)
     {
-        reset_register(1u << 23u);
+        reset_reg(1u << 23u);
     }
     else
     {
     }
 }
 
-static inline void reset_register(uint32_t bit)
+static inline void reset_reg(uint32_t bit)
 {
     RCC->APB_RSTR[0] |= bit;
     RCC->APB_RSTR[0] &= ~bit;
@@ -316,14 +316,14 @@ static inline void clear_addr(const volatile i2c_reg_t *p_reg)
     (void)dummy_read;
 }
 
-static inline bool is_transmitter_data_register_empty(const volatile i2c_reg_t *p_reg)
+static inline bool is_tx_data_reg_empty(const volatile i2c_reg_t *p_reg)
 {
     return utils_is_bit_set_u16(p_reg->SR1, SR1_TXE);
 }
 
-static inline void wait_until_transmitter_data_register_empty(const volatile i2c_reg_t *p_reg)
+static inline void wait_until_tx_data_reg_empty(const volatile i2c_reg_t *p_reg)
 {
-    while (!is_transmitter_data_register_empty(p_reg))
+    while (!is_tx_data_reg_empty(p_reg))
     {
     }
 }
@@ -347,7 +347,7 @@ static inline uint16_t calculate_rise_time(const i2c_cfg_t *p_cfg, uint32_t pclk
     return rise_time_reg & 0x3Fu;
 }
 
-static inline void set_ack(volatile i2c_reg_t *p_reg, i2c_ack_control_t ack)
+void i2c_set_ack(volatile i2c_reg_t *p_reg, i2c_ack_control_t ack)
 {
     switch (ack)
     {
@@ -364,7 +364,7 @@ static inline void set_ack(volatile i2c_reg_t *p_reg, i2c_ack_control_t ack)
     }
 }
 
-static inline void wait_until_receiver_data_register_not_empty(const volatile i2c_reg_t *p_reg)
+static inline void wait_until_rx_data_reg_not_empty(const volatile i2c_reg_t *p_reg)
 {
     while (!utils_is_bit_set_u16(p_reg->SR1, SR1_RXNE))
     {

@@ -52,6 +52,7 @@ typedef struct
 
 void i2c_enable_peripheral_clock(volatile i2c_reg_t *p_reg, bool b_enable);
 void i2c_enable_peripheral(volatile i2c_reg_t *p_reg, bool b_enable);
+void i2c_set_ack(volatile i2c_reg_t *p_reg, i2c_ack_control_t ack);
 
 void i2c_init(const i2c_handle_t *p_handle);
 void i2c_deinit(volatile i2c_reg_t *p_reg);
