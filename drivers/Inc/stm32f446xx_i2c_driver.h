@@ -66,8 +66,8 @@ void i2c_receive_as_master(const i2c_handle_t *p_handle, i2c_msg_t *p_msg, bool 
 void I2c_send_interrupt(i2c_handle_t *p_handle);
 void I2c_receive_interrupt(i2c_handle_t *p_handle);
 
-void I2c_config_irq(irq_number_t irq_number, bool b_enable);
-void I2c_config_irq_priority(irq_number_t irq_number, nvic_irq_priority_t priority);
+void I2c_config_irq(irq_num_t irq_number, bool b_enable);
+void I2c_config_irq_priority(irq_num_t irq_number, nvic_irq_prio_t priority);
 void I2c_handle_irq(i2c_handle_t *p_handle);
 
 // void I2c_on_app_event(i2c_handle_t *p_handle, I2c_event_e event);

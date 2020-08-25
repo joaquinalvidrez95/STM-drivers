@@ -219,7 +219,7 @@ void Spi_receive(spi_handle_t *handle)
     }
 }
 /* TODO: Reuse code */
-void Spi_config_irq(irq_number_t irq_number, bool enable)
+void Spi_config_irq(irq_num_t irq_number, bool enable)
 {
     if (enable == true)
     {
@@ -269,13 +269,15 @@ void Spi_receive_interrupt(spi_handle_t *handle)
         handle->p_reg->CR2.RXNEIE = 1u;
     }
 }
-void Spi_config_irq_priority(irq_number_t irq_number, nvic_irq_priority_t priority)
+
+void Spi_config_irq_priority(irq_num_t irq_number, nvic_irq_prio_t priority)
 {
     const uint8_t index = irq_number / 4u;
     const uint8_t section = irq_number % 4u;
     const uint8_t shift_amount = (8u * section) + (8u - NO_PR_BITS_IMPLEMENTED);
     NVIC_PR_BASE_ADDR[index] |= (uint32_t)priority << shift_amount;
 }
+
 void Spi_handle_irq(spi_handle_t *handle)
 {
     if (handle->p_reg->SR.TXE && handle->p_reg->CR2.TXEIE)

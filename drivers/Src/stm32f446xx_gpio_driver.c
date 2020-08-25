@@ -270,7 +270,7 @@ void gpio_toggle_pin(gpio_handle_t *p_handle)
  * @param priority 
  * @param b_enable 
  */
-void gpio_config_irq(irq_number_t irq_number, bool b_enable)
+void gpio_config_irq(irq_num_t irq_number, bool b_enable)
 {
     if (b_enable == true)
     {
@@ -304,7 +304,7 @@ void gpio_config_irq(irq_number_t irq_number, bool b_enable)
     }
 }
 
-void gpio_config_irq_priority(irq_number_t irq_number, nvic_irq_priority_t priority)
+void gpio_config_irq_priority(irq_num_t irq_number, nvic_irq_prio_t priority)
 {
     const uint8_t index = irq_number / 4u;
     const uint8_t section = irq_number % 4u;

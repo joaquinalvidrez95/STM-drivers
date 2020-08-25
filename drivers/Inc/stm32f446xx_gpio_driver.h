@@ -125,8 +125,8 @@ void gpio_write_pin(gpio_handle_t *p_handle, gpio_pin_status_t value);
 void gpio_write_port(gpio_reg_t *p_reg, uint16_t value);
 void gpio_toggle_pin(gpio_handle_t *p_handle);
 
-void gpio_config_irq(irq_number_t irq_number, bool b_enable);
-void gpio_config_irq_priority(irq_number_t irq_number, nvic_irq_priority_t priority);
+void gpio_config_irq(irq_num_t irq_number, bool b_enable);
+void gpio_config_irq_priority(irq_num_t irq_number, nvic_irq_prio_t priority);
 void gpio_irq_handling(gpio_pin_t pin);
 
 #endif /* INC_STM32F446XX_GPIO_DRIVER_H_ */
