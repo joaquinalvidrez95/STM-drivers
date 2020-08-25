@@ -14,5 +14,6 @@
 void nucleo_init_button(void);
 void nucleo_init_i2c(i2c_handle_t *p_handle);
 bool nucleo_is_button_pressed(void);
+void wait_till_button_pressed(void);
 
 #endif /* NUCLEO_H_ */

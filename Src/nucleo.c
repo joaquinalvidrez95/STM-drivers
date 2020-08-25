@@ -10,6 +10,7 @@
 #include "stm32f446xx_gpio_driver.h"
 #include "stm32f446xx.h"
 #include "stm32f446xx_i2c_driver.h"
+#include "utils.h"
 
 #define ADDRESS_I2C (0x61u)
 
@@ -63,4 +64,12 @@ void nucleo_init_i2c(i2c_handle_t *p_handle)
 bool nucleo_is_button_pressed(void)
 {
     return GPIO_BUTTON_STATE_LOW == gpio_read_pin(&g_button);
+}
+
+void wait_till_button_pressed(void)
+{
+    while (!nucleo_is_button_pressed())
+    {
+    }
+    utils_delay();
 }
