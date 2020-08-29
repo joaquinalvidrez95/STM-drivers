@@ -8,6 +8,14 @@
 
 typedef enum
 {
+    I2C_BUS_1,
+    I2C_BUS_2,
+    I2C_BUS_3,
+    I2C_BUS_TOTAL
+} i2c_bus_t;
+
+typedef enum
+{
     I2C_SCL_SPEED_STANDARD_MODE = 100000u,
     I2C_SCL_SPEED_FAST_MODE_4K = 400000u,
     I2C_SCL_SPEED_FAST_MODE_2K = 200000u,
@@ -15,8 +23,8 @@ typedef enum
 
 typedef enum
 {
-    I2C_ACK_CONTROL_DISABLE = 0u,
-    I2C_ACK_CONTROL_ENABLE = 1u,
+    I2C_ACK_CONTROL_DISABLED = 0u,
+    I2C_ACK_CONTROL_ENABLED = 1u,
 } i2c_ack_control_t;
 
 typedef enum
@@ -25,19 +33,39 @@ typedef enum
     I2C_DUTY_16_9 = 1u,
 } i2c_fm_duty_t;
 
+typedef enum
+{
+    I2C_STATE_READY,
+    I2C_STATE_BUSY_IN_RX,
+    I2C_STATE_BUSY_IN_TX,
+} i2c_state_t;
+
+typedef enum
+{
+    I2C_IRQ_ERR_BERR,
+    I2C_IRQ_ERR_ARLO,
+    I2C_IRQ_ERR_AF,
+    I2C_IRQ_ERR_OVR,
+    I2C_IRQ_ERR_TIMEOUT,
+} i2c_irq_t;
+
+typedef enum
+{
+    I2C_REPEATED_START_DISABLED,
+    I2C_REPEATED_START_ENABLED,
+} i2c_repeated_start_t;
+
+typedef void (*i2c_irq_callback_t)(i2c_irq_t irq);
+
 typedef struct
 {
+    i2c_bus_t bus;
     i2c_scl_speed_t scl_speed;
     uint8_t device_address;
     i2c_ack_control_t ack_control;
     i2c_fm_duty_t fm_duty_cycle;
+    i2c_irq_callback_t irq_cb;
 } i2c_cfg_t;
-
-typedef struct
-{
-    volatile i2c_reg_t *p_reg;
-    i2c_cfg_t cfg;
-} i2c_handle_t;
 
 /**
  * @brief 
@@ -48,27 +76,19 @@ typedef struct
     uint8_t *buffer;
     size_t size;
     uint8_t slave_address;
+    i2c_repeated_start_t repeated_start;
 } i2c_msg_t;
 
-void i2c_enable_peripheral_clock(volatile i2c_reg_t *p_reg, bool b_enable);
-void i2c_enable_peripheral(volatile i2c_reg_t *p_reg, bool b_enable);
-void i2c_set_ack(volatile i2c_reg_t *p_reg, i2c_ack_control_t ack);
-
-void i2c_init(const i2c_handle_t *p_handle);
+void i2c_init(const i2c_cfg_t *p_cfg);
 void i2c_deinit(volatile i2c_reg_t *p_reg);
 
-void I2c_enable_ssi(i2c_reg_t *p_reg, bool b_enable);
-void I2c_enable_ssoe(i2c_reg_t *p_reg, bool b_enable);
+void i2c_enable_peripheral(i2c_bus_t bus, bool b_enabled);
+void i2c_set_ack(i2c_bus_t bus, i2c_ack_control_t ack);
 
-void i2c_send_as_master(const i2c_handle_t *p_handle, const i2c_msg_t *p_msg, bool b_with_repeated_start);
-void i2c_receive_as_master(const i2c_handle_t *p_handle, i2c_msg_t *p_msg, bool b_with_repeated_start);
+void i2c_transmit_as_master(i2c_bus_t bus, const i2c_msg_t *p_msg);
+void i2c_receive_as_master(i2c_bus_t bus, i2c_msg_t *p_msg);
 
-void I2c_send_interrupt(i2c_handle_t *p_handle);
-void I2c_receive_interrupt(i2c_handle_t *p_handle);
+void i2c_transmit_as_master_with_isr(i2c_bus_t bus, i2c_msg_t *p_msg);
+void i2c_receive_as_master_with_isr(i2c_bus_t bus, i2c_msg_t *p_msg);
 
-void I2c_config_irq(irq_num_t irq_number, bool b_enable);
-void I2c_config_irq_priority(irq_num_t irq_number, nvic_irq_prio_t priority);
-void I2c_handle_irq(i2c_handle_t *p_handle);
-
-// void I2c_on_app_event(i2c_handle_t *p_handle, I2c_event_e event);
 #endif /* I2C_H */

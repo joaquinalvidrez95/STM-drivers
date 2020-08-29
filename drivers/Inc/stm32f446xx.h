@@ -317,19 +317,6 @@ typedef struct
 #define GPIOG_PCLCK_DI() (RCC->AHBENR[0] &= ~(1u << 6u))
 #define GPIOH_PCLCK_DI() (RCC->AHBENR[0] &= ~(1u << 7u))
 
-/* TODO: Move to i2c */
-/** Enables I2Cx */
-#define I2C_PCLK_EN(X) (RCC->APBENR[0] |= (1u << X))
-#define I2C1_PCLK_EN() (I2C_PCLK_EN(21u))
-#define I2C2_PCLK_EN() (I2C_PCLK_EN(22u))
-#define I2C3_PCLK_EN() (I2C_PCLK_EN(23u))
-
-/** Disables I2Cx */
-#define I2C_PCLK_DI(X) (RCC->APBENR[0] &= ~(1u << X))
-#define I2C1_PCLK_DI(X) (I2C_PCLK_DI(21u))
-#define I2C2_PCLK_DI(X) (I2C_PCLK_DI(22u))
-#define I2C3_PCLK_DI(X) (I2C_PCLK_DI(23u))
-
 /** Enables SPIx */
 #define SPI1_PCLK_EN() (RCC->APBENR[1] |= (1u << 12u))
 #define SPI2_PCLK_EN() (RCC->APBENR[0] |= (1u << 14u))

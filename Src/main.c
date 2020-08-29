@@ -453,51 +453,48 @@ int main()
 
 #elif MAIN == MAIN_010_I2C_MASTER_TX
 
-static void init(i2c_handle_t *p_handle);
+static void init(void);
 
 #define NUM_MESSAGES (3u)
 
 int main()
 {
-    i2c_handle_t i2c_handle;
-
-    init(&i2c_handle);
-    uint8_t message[NUM_MESSAGES][10] = {"hola man\n", "middle", "bye"};
-    uint8_t idx = 0u;
+    init();
+    /* TODO: Try to make const */
+    char messages[NUM_MESSAGES][10] = {"hola man\n", "middle", "bye"};
+    uint8_t msg_idx = 0u;
 
     for (;;)
     {
         wait_till_button_pressed();
 
-        i2c_send_as_master(&i2c_handle,
-                           &(i2c_msg_t){
-                               .buffer = &message[idx][0],
-                               .size = strlen(message[idx]),
-                               .slave_address = ARDUINO_I2C_ADDRESS,
-                           },
-                           false);
-        idx++;
-        idx %= NUM_MESSAGES;
+        i2c_transmit_as_master(I2C_BUS_1,
+                               &(const i2c_msg_t){
+                                   .buffer = (uint8_t *)&messages[msg_idx][0],
+                                   .size = strlen(messages[msg_idx]),
+                                   .slave_address = ARDUINO_I2C_ADDRESS,
+                                   .repeated_start = I2C_ACK_CONTROL_DISABLED,
+                               });
+        msg_idx++;
+        msg_idx %= NUM_MESSAGES;
     }
 }
 
-static void init(i2c_handle_t *p_handle)
+static void init(void)
 {
     nucleo_init_button();
-    nucleo_init_i2c(p_handle);
+    nucleo_init_i2c();
 }
 
 #elif MAIN == MAIN_011_I2C_MASTER_RX
 
-static void init(i2c_handle_t *p_handle);
+static void init(void);
 
 #define BUFFER_SIZE (32u)
 
 int main()
 {
-    i2c_handle_t i2c_handle;
-
-    init(&i2c_handle);
+    init();
 
     uint8_t buffer[BUFFER_SIZE] = {0u};
 
@@ -505,33 +502,33 @@ int main()
     {
         wait_till_button_pressed();
 
-        const uint8_t msg_length = arduino_i2c_get_length(&i2c_handle);
+        const uint8_t msg_length = arduino_i2c_get_length(I2C_BUS_1);
 
-        i2c_send_as_master(&i2c_handle,
-                           &(const i2c_msg_t){
-                               .buffer = &(uint8_t){ARDUINO_I2C_COMMAND_READ_MSG},
-                               .size = sizeof(uint8_t),
-                               .slave_address = ARDUINO_I2C_ADDRESS,
-                           },
-                           false);
+        i2c_transmit_as_master(I2C_BUS_1,
+                               &(const i2c_msg_t){
+                                   .buffer = &(uint8_t){ARDUINO_I2C_COMMAND_READ_MSG},
+                                   .size = sizeof(uint8_t),
+                                   .slave_address = ARDUINO_I2C_ADDRESS,
+                                   .repeated_start = I2C_ACK_CONTROL_DISABLED,
+                               });
 
-        i2c_receive_as_master(&i2c_handle,
+        i2c_receive_as_master(I2C_BUS_1,
                               &(i2c_msg_t){
                                   .size = msg_length,
                                   .buffer = &buffer[0],
                                   .slave_address = ARDUINO_I2C_ADDRESS,
-                              },
-                              false);
+                                  .repeated_start = I2C_ACK_CONTROL_DISABLED,
+                              });
 
         printf("Arduino's message: %s", &buffer[0]);
     }
 }
 
-static void init(i2c_handle_t *p_handle)
+static void init(void)
 {
     initialise_monitor_handles();
     nucleo_init_button();
-    nucleo_init_i2c(p_handle);
+    nucleo_init_i2c();
 }
 
 #endif

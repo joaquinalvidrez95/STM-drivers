@@ -12,7 +12,7 @@
 #include "stm32f446xx_i2c_driver.h"
 
 void nucleo_init_button(void);
-void nucleo_init_i2c(i2c_handle_t *p_handle);
+void nucleo_init_i2c(void);
 bool nucleo_is_button_pressed(void);
 void wait_till_button_pressed(void);
 

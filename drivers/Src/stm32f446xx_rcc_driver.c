@@ -32,6 +32,24 @@ uint32_t rcc_get_pclk1(void)
     return get_system_clock() / (uint32_t)get_ahb_prescaler() / (uint32_t)get_apb_low_speed_prescaler();
 }
 
+void rcc_set_i2c_peripheral_clock_enabled(i2c_bus_t bus, bool b_enabled)
+{
+    const uint32_t bit_positions[I2C_BUS_TOTAL] = {
+        [I2C_BUS_1] = 1u << 21u,
+        [I2C_BUS_2] = 1u << 22u,
+        [I2C_BUS_3] = 1u << 23u,
+    };
+
+    if (b_enabled)
+    {
+        RCC->APBENR[0] |= bit_positions[bus];
+    }
+    else
+    {
+        RCC->APBENR[0] &= ~bit_positions[bus];
+    }
+}
+
 static inline uint32_t get_system_clock(void)
 {
     const uint8_t clock_source = ((RCC->CFGR >> 2u) & 0x3u);

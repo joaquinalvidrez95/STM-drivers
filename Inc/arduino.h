@@ -64,6 +64,6 @@ void arduino_print(spi_handle_t *spi, const char message[]);
 
 void arduino_read_id(spi_handle_t *spi, char id[], size_t length);
 
-uint8_t arduino_i2c_get_length(const i2c_handle_t *p_handle);
+uint8_t arduino_i2c_get_length(i2c_bus_t bus);
 
 #endif /* ARDUINO_H_ */

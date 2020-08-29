@@ -24,12 +24,20 @@ const static gpio_handle_t g_button = {
     },
 };
 
+static i2c_cfg_t g_i2c_cfg = {
+    .bus = I2C_BUS_1,
+    .ack_control = I2C_ACK_CONTROL_ENABLED,
+    .device_address = ADDRESS_I2C,
+    .fm_duty_cycle = I2C_DUTY_2,
+    .scl_speed = I2C_SCL_SPEED_STANDARD_MODE,
+};
+
 void nucleo_init_button(void)
 {
     gpio_init(&g_button);
 }
 
-void nucleo_init_i2c(i2c_handle_t *p_handle)
+void nucleo_init_i2c(void)
 {
     gpio_handle_t pin = {
         .p_reg = GPIOB,
@@ -50,15 +58,9 @@ void nucleo_init_i2c(i2c_handle_t *p_handle)
     pin.cfg.number = GPIO_PIN_9;
     gpio_init(&pin);
 
-    p_handle->p_reg = I2C1;
-    p_handle->cfg.ack_control = I2C_ACK_CONTROL_ENABLE;
-    p_handle->cfg.device_address = ADDRESS_I2C;
-    p_handle->cfg.fm_duty_cycle = I2C_DUTY_2;
-    p_handle->cfg.scl_speed = I2C_SCL_SPEED_STANDARD_MODE;
-
-    i2c_init(p_handle);
-    i2c_enable_peripheral(p_handle->p_reg, true);
-    i2c_set_ack(p_handle->p_reg, I2C_ACK_CONTROL_ENABLE);
+    i2c_init(&g_i2c_cfg);
+    i2c_enable_peripheral(g_i2c_cfg.bus, true);
+    i2c_set_ack(g_i2c_cfg.bus, I2C_ACK_CONTROL_ENABLED);
 }
 
 bool nucleo_is_button_pressed(void)
