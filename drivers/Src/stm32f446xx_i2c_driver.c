@@ -65,20 +65,21 @@ typedef enum
 
 typedef enum
 {
-    ADDRESS_PHASE_READ,
-    ADDRESS_PHASE_WRITE,
-} address_phase_t;
+    OPERATION_READ,
+    OPERATION_WRITE,
+} operation_t;
 
 typedef struct
 {
-    i2c_msg_t *p_msg;
+    volatile i2c_msg_t *p_msg;
     i2c_state_t state;
 } irq_manager_t;
 
 typedef struct
 {
     irq_manager_t irq_mgr;
-    const i2c_cfg_t *p_cfg;
+    const volatile i2c_cfg_t *p_cfg;
+    volatile i2c_reg_t *const p_reg;
 } i2c_handle_t;
 
 static inline void reset_reg(uint32_t bit);
@@ -88,8 +89,8 @@ static inline void generate_blocking_start_condition(volatile i2c_reg_t *p_reg);
 static inline void generate_stop_condition(volatile i2c_reg_t *p_reg);
 static inline bool is_start_condition_generated(const volatile i2c_reg_t *p_reg);
 static inline bool is_address_phase_done(const volatile i2c_reg_t *p_reg);
-static inline void execute_address_phase(volatile i2c_reg_t *p_reg, uint8_t slave_address, address_phase_t operation);
-static inline void execute_blocking_address_phase(volatile i2c_reg_t *p_reg, uint8_t slave_address, address_phase_t operation);
+static inline void execute_address_phase(volatile i2c_reg_t *p_reg, uint8_t slave_address, operation_t operation);
+static inline void execute_blocking_address_phase(volatile i2c_reg_t *p_reg, uint8_t slave_address, operation_t operation);
 static inline void clear_addr(const volatile i2c_reg_t *p_reg);
 static inline bool is_tx_data_reg_empty(const volatile i2c_reg_t *p_reg);
 static inline void wait_until_tx_data_reg_empty(const volatile i2c_reg_t *p_reg);
@@ -107,13 +108,11 @@ static inline bool is_err_interrupt_enabled(const volatile i2c_reg_t *p_reg);
 static inline bool has_bus_error(const volatile i2c_reg_t *p_reg);
 static inline void handle_start_condition_irq(volatile i2c_handle_t *p_handle);
 
-static volatile i2c_reg_t *const gp_registers[I2C_BUS_TOTAL] = {
-    [I2C_BUS_1] = I2C1,
-    [I2C_BUS_2] = I2C2,
-    [I2C_BUS_3] = I2C3,
+static volatile i2c_handle_t g_handles[I2C_BUS_TOTAL] = {
+    [I2C_BUS_1] = {.p_reg = I2C1},
+    [I2C_BUS_2] = {.p_reg = I2C2},
+    [I2C_BUS_3] = {.p_reg = I2C3},
 };
-
-static volatile i2c_handle_t g_handles[I2C_BUS_TOTAL] = {0u};
 
 void i2c_init(const i2c_cfg_t *p_cfg)
 {
@@ -126,73 +125,73 @@ void i2c_init(const i2c_cfg_t *p_cfg)
     const uint32_t pclk1 = rcc_get_pclk1();
 
     /* Configures FREQ */
-    gp_registers[p_cfg->bus]->CR2 = (uint16_t)(pclk1 / 1000000u) & 0b111111u;
+    g_handles[p_cfg->bus].p_reg->CR2 = (uint16_t)(pclk1 / 1000000u) & 0b111111u;
 
     /* Configures device address */
-    gp_registers[p_cfg->bus]->OAR1 |= ((uint16_t)p_cfg->device_address << BIT_POSITION_OAR1_ADD) | (1u << 14u);
+    g_handles[p_cfg->bus].p_reg->OAR1 |= ((uint16_t)p_cfg->device_address << BIT_POSITION_OAR1_ADD) | (1u << 14u);
 
     /* Clock Control Register (CCR) */
-    gp_registers[p_cfg->bus]->CCR = calculate_ccr(p_cfg, pclk1);
-    gp_registers[p_cfg->bus]->TRISE = calculate_rise_time(p_cfg, pclk1);
+    g_handles[p_cfg->bus].p_reg->CCR = calculate_ccr(p_cfg, pclk1);
+    g_handles[p_cfg->bus].p_reg->TRISE = calculate_rise_time(p_cfg, pclk1);
 }
 
 void i2c_transmit_as_master(i2c_bus_t bus, const i2c_msg_t *p_msg)
 {
-    generate_blocking_start_condition(gp_registers[bus]);
+    generate_blocking_start_condition(g_handles[bus].p_reg);
 
-    execute_blocking_address_phase(gp_registers[bus], p_msg->slave_address, ADDRESS_PHASE_WRITE);
-    clear_addr(gp_registers[bus]);
+    execute_blocking_address_phase(g_handles[bus].p_reg, p_msg->slave_address, OPERATION_WRITE);
+    clear_addr(g_handles[bus].p_reg);
 
     for (uint8_t buf_idx = 0u; buf_idx < p_msg->size; buf_idx++)
     {
-        wait_until_tx_data_reg_empty(gp_registers[bus]);
-        gp_registers[bus]->DR = p_msg->buffer[buf_idx];
+        wait_until_tx_data_reg_empty(g_handles[bus].p_reg);
+        g_handles[bus].p_reg->DR = p_msg->buffer[buf_idx];
     }
 
-    wait_until_tx_data_reg_empty(gp_registers[bus]);
+    wait_until_tx_data_reg_empty(g_handles[bus].p_reg);
 
-    while (!is_byte_transfer_finished(gp_registers[bus]))
+    while (!is_byte_transfer_finished(g_handles[bus].p_reg))
     {
     }
     if (!p_msg->repeated_start)
     {
-        generate_stop_condition(gp_registers[bus]);
+        generate_stop_condition(g_handles[bus].p_reg);
     }
 }
 
 void i2c_receive_as_master(i2c_bus_t bus, i2c_msg_t *p_msg)
 {
-    generate_blocking_start_condition(gp_registers[bus]);
+    generate_blocking_start_condition(g_handles[bus].p_reg);
 
-    execute_blocking_address_phase(gp_registers[bus], p_msg->slave_address, ADDRESS_PHASE_READ);
+    execute_blocking_address_phase(g_handles[bus].p_reg, p_msg->slave_address, OPERATION_READ);
 
     if (1u == p_msg->size)
     {
         i2c_set_ack(bus, I2C_ACK_CONTROL_DISABLED);
-        clear_addr(gp_registers[bus]);
-        wait_until_rx_data_reg_not_empty(gp_registers[bus]);
+        clear_addr(g_handles[bus].p_reg);
+        wait_until_rx_data_reg_not_empty(g_handles[bus].p_reg);
         if (!p_msg->repeated_start)
         {
-            generate_stop_condition(gp_registers[bus]);
+            generate_stop_condition(g_handles[bus].p_reg);
         }
-        p_msg->buffer[0] = gp_registers[bus]->DR;
+        p_msg->buffer[0] = g_handles[bus].p_reg->DR;
     }
     else if (1u < p_msg->size)
     {
         /* TODO: Refactor nested ifs */
-        clear_addr(gp_registers[bus]);
+        clear_addr(g_handles[bus].p_reg);
         for (uint8_t buf_idx = 0u; buf_idx < p_msg->size; buf_idx++)
         {
-            wait_until_rx_data_reg_not_empty(gp_registers[bus]);
+            wait_until_rx_data_reg_not_empty(g_handles[bus].p_reg);
             if ((p_msg->size - 2u) == buf_idx)
             {
                 i2c_set_ack(bus, I2C_ACK_CONTROL_DISABLED);
                 if (!p_msg->repeated_start)
                 {
-                    generate_stop_condition(gp_registers[bus]);
+                    generate_stop_condition(g_handles[bus].p_reg);
                 }
             }
-            p_msg->buffer[buf_idx] = gp_registers[bus]->DR;
+            p_msg->buffer[buf_idx] = g_handles[bus].p_reg->DR;
         }
     }
     else
@@ -211,8 +210,8 @@ void i2c_transmit_as_master_with_isr(i2c_bus_t bus, i2c_msg_t *p_msg)
     {
         g_handles[bus].irq_mgr.p_msg = p_msg;
         g_handles[bus].irq_mgr.state = I2C_STATE_BUSY_IN_TX;
-        generate_start_condition(gp_registers[bus]);
-        enable_buffer_interrupt(gp_registers[bus]);
+        generate_start_condition(g_handles[bus].p_reg);
+        enable_buffer_interrupt(g_handles[bus].p_reg);
     }
 }
 
@@ -223,8 +222,8 @@ void i2c_receive_as_master_with_isr(i2c_bus_t bus, i2c_msg_t *p_msg)
     {
         g_handles[bus].irq_mgr.p_msg = p_msg;
         g_handles[bus].irq_mgr.state = I2C_STATE_BUSY_IN_RX;
-        generate_start_condition(gp_registers[bus]);
-        enable_buffer_interrupt(gp_registers[bus]);
+        generate_start_condition(g_handles[bus].p_reg);
+        enable_buffer_interrupt(g_handles[bus].p_reg);
     }
 }
 
@@ -242,11 +241,11 @@ void i2c_enable_peripheral(i2c_bus_t bus, bool b_enabled)
 {
     if (b_enabled)
     {
-        gp_registers[bus]->CR1 |= (uint16_t)CR1_PE;
+        g_handles[bus].p_reg->CR1 |= (uint16_t)CR1_PE;
     }
     else
     {
-        gp_registers[bus]->CR1 &= ~((uint16_t)CR1_PE);
+        g_handles[bus].p_reg->CR1 &= ~((uint16_t)CR1_PE);
     }
 }
 
@@ -318,15 +317,15 @@ static inline bool is_start_condition_generated(const volatile i2c_reg_t *p_reg)
     return utils_is_bit_set_u16(p_reg->SR1, SR1_SB);
 }
 
-static inline void execute_address_phase(volatile i2c_reg_t *p_reg, uint8_t slave_address, address_phase_t operation)
+static inline void execute_address_phase(volatile i2c_reg_t *p_reg, uint8_t slave_address, operation_t operation)
 {
     switch (operation)
     {
-    case ADDRESS_PHASE_READ:
+    case OPERATION_READ:
         p_reg->DR = (uint16_t)((slave_address << 1u) | 1u);
         break;
 
-    case ADDRESS_PHASE_WRITE:
+    case OPERATION_WRITE:
         p_reg->DR = (uint16_t)((slave_address << 1u) & (uint8_t)(~1u));
         break;
 
@@ -335,7 +334,7 @@ static inline void execute_address_phase(volatile i2c_reg_t *p_reg, uint8_t slav
     }
 }
 
-static inline void execute_blocking_address_phase(volatile i2c_reg_t *p_reg, uint8_t slave_address, address_phase_t operation)
+static inline void execute_blocking_address_phase(volatile i2c_reg_t *p_reg, uint8_t slave_address, operation_t operation)
 {
     execute_address_phase(p_reg, slave_address, operation);
     while (!is_address_phase_done(p_reg))
@@ -390,11 +389,11 @@ void i2c_set_ack(i2c_bus_t bus, i2c_ack_control_t ack)
 {
     if (I2C_ACK_CONTROL_ENABLED == ack)
     {
-        gp_registers[bus]->CR1 |= CR1_ACK;
+        g_handles[bus].p_reg->CR1 |= CR1_ACK;
     }
     else
     {
-        gp_registers[bus]->CR1 &= ~CR1_ACK;
+        g_handles[bus].p_reg->CR1 &= ~CR1_ACK;
     }
 }
 
@@ -429,9 +428,9 @@ static inline void enable_interrupts(volatile i2c_reg_t *p_reg)
 
 static void handle_ev_irq(volatile i2c_handle_t *p_handle)
 {
-    if (utils_is_bit_set_u16(gp_registers[p_handle->p_cfg->bus]->SR1, CR2_ITEVTEN))
+    if (utils_is_bit_set_u16(g_handles[p_handle->p_cfg->bus].p_reg->SR1, CR2_ITEVTEN))
     {
-        if (is_start_condition_generated(gp_registers[p_handle->p_cfg->bus]))
+        if (is_start_condition_generated(g_handles[p_handle->p_cfg->bus].p_reg))
         {
             handle_start_condition_irq(p_handle);
         }
@@ -441,7 +440,7 @@ static void handle_ev_irq(volatile i2c_handle_t *p_handle)
 static inline void handle_err_bit(volatile i2c_handle_t *p_handle, i2c_interrupt_t irq, uint16_t mask)
 {
     /* Clears interrupt flag */
-    gp_registers[p_handle->p_cfg->bus]->SR1 &= ~mask;
+    g_handles[p_handle->p_cfg->bus].p_reg->SR1 &= ~mask;
 
     if (NULL != p_handle->p_cfg->irq_cb)
     {
@@ -452,35 +451,35 @@ static inline void handle_err_bit(volatile i2c_handle_t *p_handle, i2c_interrupt
 /* TODO: Create handling function for every bit */
 static void handle_err_irq(volatile i2c_handle_t *p_handle)
 {
-    if (is_err_interrupt_enabled(gp_registers[p_handle->p_cfg->bus]))
+    if (is_err_interrupt_enabled(g_handles[p_handle->p_cfg->bus].p_reg))
     {
         /***********************Check for Bus error************************************/
-        if (has_bus_error(gp_registers[p_handle->p_cfg->bus]))
+        if (has_bus_error(g_handles[p_handle->p_cfg->bus].p_reg))
         {
             handle_err_bit(p_handle, I2C_INTERRUPT_ERR_BERR, SR1_BERR);
         }
 
         /***********************Check for arbitration lost error************************************/
-        if (utils_is_bit_set_u16(gp_registers[p_handle->p_cfg->bus]->SR1, SR1_ARLO))
+        if (utils_is_bit_set_u16(g_handles[p_handle->p_cfg->bus].p_reg->SR1, SR1_ARLO))
         {
             handle_err_bit(p_handle, I2C_INTERRUPT_ERR_ARLO, SR1_ARLO);
         }
 
         /***********************Check for ACK failure  error************************************/
 
-        if (utils_is_bit_set_u16(gp_registers[p_handle->p_cfg->bus]->SR1, SR1_AF))
+        if (utils_is_bit_set_u16(g_handles[p_handle->p_cfg->bus].p_reg->SR1, SR1_AF))
         {
             handle_err_bit(p_handle, I2C_INTERRUPT_ERR_AF, SR1_AF);
         }
 
         /***********************Check for Overrun/underrun error************************************/
-        if (utils_is_bit_set_u16(gp_registers[p_handle->p_cfg->bus]->SR1, SR1_OVR))
+        if (utils_is_bit_set_u16(g_handles[p_handle->p_cfg->bus].p_reg->SR1, SR1_OVR))
         {
             handle_err_bit(p_handle, I2C_INTERRUPT_ERR_OVR, SR1_OVR);
         }
 
         /***********************Check for Time out error************************************/
-        if (utils_is_bit_set_u16(gp_registers[p_handle->p_cfg->bus]->SR1, SR1_TIMEOUT))
+        if (utils_is_bit_set_u16(g_handles[p_handle->p_cfg->bus].p_reg->SR1, SR1_TIMEOUT))
         {
             handle_err_bit(p_handle, I2C_INTERRUPT_ERR_TIMEOUT, SR1_TIMEOUT);
         }
