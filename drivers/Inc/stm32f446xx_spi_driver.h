@@ -12,6 +12,7 @@
 #include <stddef.h>
 #include <stdbool.h>
 #include "stm32f446xx.h"
+#include "stm32f446xx_nvic_driver.h"
 
 typedef enum
 {
@@ -121,8 +122,7 @@ void Spi_receive(spi_handle_t *handle);
 void Spi_send_interrupt(spi_handle_t *handle);
 void Spi_receive_interrupt(spi_handle_t *handle);
 
-void Spi_config_irq(irq_num_t irq_number, bool enable);
-void Spi_config_irq_priority(irq_num_t irq_number, nvic_irq_prio_t priority);
+void Spi_config_irq(nvic_irq_num_t irq_number, bool enable);
 void Spi_handle_irq(spi_handle_t *handle);
 
 void Spi_clear_ovr_flag(Spi_reg_t *p_reg);

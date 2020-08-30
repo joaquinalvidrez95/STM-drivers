@@ -219,38 +219,9 @@ void Spi_receive(spi_handle_t *handle)
     }
 }
 /* TODO: Reuse code */
-void Spi_config_irq(irq_num_t irq_number, bool enable)
+void Spi_config_irq(nvic_irq_num_t irq_number, bool enable)
 {
-    if (enable == true)
-    {
-        if (irq_number <= 31u)
-        {
-            *NVIC_ISER0 |= 1u << irq_number;
-        }
-        else if ((irq_number > 31u) && (irq_number < 64u))
-        {
-            *NVIC_ISER1 |= 1u << (irq_number % 32u);
-        }
-        else if ((irq_number >= 64u) && (irq_number < 96u))
-        {
-            *NVIC_ISER3 |= 1u << (irq_number % 64u);
-        }
-    }
-    else
-    {
-        if (irq_number <= 31u)
-        {
-            *NVIC_ICER0 |= 1u << irq_number;
-        }
-        else if ((irq_number > 31u) && (irq_number < 64u))
-        {
-            *NVIC_ICER1 |= 1u << (irq_number % 32u);
-        }
-        else if ((irq_number >= 64u) && (irq_number < 96u))
-        {
-            *NVIC_ICER3 |= 1u << (irq_number % 64u);
-        }
-    }
+  
 }
 
 void Spi_send_interrupt(spi_handle_t *handle)
@@ -268,14 +239,6 @@ void Spi_receive_interrupt(spi_handle_t *handle)
         handle->tx.state = SPI_STATE_BUSY;
         handle->p_reg->CR2.RXNEIE = 1u;
     }
-}
-
-void Spi_config_irq_priority(irq_num_t irq_number, nvic_irq_prio_t priority)
-{
-    const uint8_t index = irq_number / 4u;
-    const uint8_t section = irq_number % 4u;
-    const uint8_t shift_amount = (8u * section) + (8u - NO_PR_BITS_IMPLEMENTED);
-    NVIC_PR_BASE_ADDR[index] |= (uint32_t)priority << shift_amount;
 }
 
 void Spi_handle_irq(spi_handle_t *handle)
