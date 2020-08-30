@@ -3,6 +3,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include "stm32f446xx_rcc_driver.h"
+#include "stm32f446xx_nvic_driver.h"
 #include "utils.h"
 #include <stddef.h>
 
@@ -100,7 +101,7 @@ static inline void enable_event_interrupt(volatile i2c_reg_t *p_reg);
 static inline void enable_error_interrupt(volatile i2c_reg_t *p_reg);
 static inline void enable_interrupts(volatile i2c_reg_t *p_reg);
 static void handle_err_irq(volatile i2c_handle_t *p_handle);
-static inline void handle_err_bit(volatile i2c_handle_t *p_handle, i2c_irq_t irq, uint16_t mask);
+static inline void handle_err_bit(volatile i2c_handle_t *p_handle, i2c_interrupt_t irq, uint16_t mask);
 static void handle_ev_irq(volatile i2c_handle_t *p_handle);
 static inline bool is_err_interrupt_enabled(const volatile i2c_reg_t *p_reg);
 static inline bool has_bus_error(const volatile i2c_reg_t *p_reg);
@@ -225,6 +226,16 @@ void i2c_receive_as_master_with_isr(i2c_bus_t bus, i2c_msg_t *p_msg)
         generate_start_condition(gp_registers[bus]);
         enable_buffer_interrupt(gp_registers[bus]);
     }
+}
+
+void i2c_set_irq_enabled(i2c_bus_t bus, i2c_irq_t irq, bool b_enabled)
+{
+    const nvic_irq_num_t irqs[I2C_BUS_TOTAL][I2C_IRQ_TOTAL] = {
+        [I2C_BUS_1] = {[I2C_IRQ_EV] = NVIC_IRQ_NUM_I2C1_EV, [I2C_IRQ_ERR] = NVIC_IRQ_NUM_I2C1_ER},
+        [I2C_BUS_2] = {[I2C_IRQ_EV] = NVIC_IRQ_NUM_I2C2_EV, [I2C_IRQ_ERR] = NVIC_IRQ_NUM_I2C2_ER},
+        [I2C_BUS_3] = {[I2C_IRQ_EV] = NVIC_IRQ_NUM_I2C3_EV, [I2C_IRQ_ERR] = NVIC_IRQ_NUM_I2C3_ER},
+    };
+    nvic_set_irq_enabled(irqs[bus][irq], b_enabled);
 }
 
 void i2c_enable_peripheral(i2c_bus_t bus, bool b_enabled)
@@ -427,14 +438,14 @@ static void handle_ev_irq(volatile i2c_handle_t *p_handle)
     }
 }
 
-static inline void handle_err_bit(volatile i2c_handle_t *p_handle, i2c_irq_t irq, uint16_t mask)
+static inline void handle_err_bit(volatile i2c_handle_t *p_handle, i2c_interrupt_t irq, uint16_t mask)
 {
     /* Clears interrupt flag */
     gp_registers[p_handle->p_cfg->bus]->SR1 &= ~mask;
 
     if (NULL != p_handle->p_cfg->irq_cb)
     {
-        p_handle->p_cfg->irq_cb(I2C_IRQ_ERR_BERR);
+        p_handle->p_cfg->irq_cb(I2C_INTERRUPT_ERR_BERR);
     }
 }
 
@@ -446,32 +457,32 @@ static void handle_err_irq(volatile i2c_handle_t *p_handle)
         /***********************Check for Bus error************************************/
         if (has_bus_error(gp_registers[p_handle->p_cfg->bus]))
         {
-            handle_err_bit(p_handle, I2C_IRQ_ERR_BERR, SR1_BERR);
+            handle_err_bit(p_handle, I2C_INTERRUPT_ERR_BERR, SR1_BERR);
         }
 
         /***********************Check for arbitration lost error************************************/
         if (utils_is_bit_set_u16(gp_registers[p_handle->p_cfg->bus]->SR1, SR1_ARLO))
         {
-            handle_err_bit(p_handle, I2C_IRQ_ERR_ARLO, SR1_ARLO);
+            handle_err_bit(p_handle, I2C_INTERRUPT_ERR_ARLO, SR1_ARLO);
         }
 
         /***********************Check for ACK failure  error************************************/
 
         if (utils_is_bit_set_u16(gp_registers[p_handle->p_cfg->bus]->SR1, SR1_AF))
         {
-            handle_err_bit(p_handle, I2C_IRQ_ERR_AF, SR1_AF);
+            handle_err_bit(p_handle, I2C_INTERRUPT_ERR_AF, SR1_AF);
         }
 
         /***********************Check for Overrun/underrun error************************************/
         if (utils_is_bit_set_u16(gp_registers[p_handle->p_cfg->bus]->SR1, SR1_OVR))
         {
-            handle_err_bit(p_handle, I2C_IRQ_ERR_OVR, SR1_OVR);
+            handle_err_bit(p_handle, I2C_INTERRUPT_ERR_OVR, SR1_OVR);
         }
 
         /***********************Check for Time out error************************************/
         if (utils_is_bit_set_u16(gp_registers[p_handle->p_cfg->bus]->SR1, SR1_TIMEOUT))
         {
-            handle_err_bit(p_handle, I2C_IRQ_ERR_TIMEOUT, SR1_TIMEOUT);
+            handle_err_bit(p_handle, I2C_INTERRUPT_ERR_TIMEOUT, SR1_TIMEOUT);
         }
     }
 }

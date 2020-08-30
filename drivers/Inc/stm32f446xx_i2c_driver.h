@@ -2,6 +2,7 @@
 #define I2C_H
 
 #include "stm32f446xx.h"
+#include "stm32f446xx_nvic_driver.h"
 #include <stdbool.h>
 #include <stdint.h>
 #include <stddef.h>
@@ -42,11 +43,18 @@ typedef enum
 
 typedef enum
 {
-    I2C_IRQ_ERR_BERR,
-    I2C_IRQ_ERR_ARLO,
-    I2C_IRQ_ERR_AF,
-    I2C_IRQ_ERR_OVR,
-    I2C_IRQ_ERR_TIMEOUT,
+    I2C_INTERRUPT_ERR_BERR,
+    I2C_INTERRUPT_ERR_ARLO,
+    I2C_INTERRUPT_ERR_AF,
+    I2C_INTERRUPT_ERR_OVR,
+    I2C_INTERRUPT_ERR_TIMEOUT,
+} i2c_interrupt_t;
+
+typedef enum
+{
+    I2C_IRQ_EV,
+    I2C_IRQ_ERR,
+    I2C_IRQ_TOTAL,
 } i2c_irq_t;
 
 typedef enum
@@ -55,7 +63,7 @@ typedef enum
     I2C_REPEATED_START_ENABLED,
 } i2c_repeated_start_t;
 
-typedef void (*i2c_irq_callback_t)(i2c_irq_t irq);
+typedef void (*i2c_irq_callback_t)(i2c_interrupt_t irq);
 
 typedef struct
 {
@@ -90,5 +98,7 @@ void i2c_receive_as_master(i2c_bus_t bus, i2c_msg_t *p_msg);
 
 void i2c_transmit_as_master_with_isr(i2c_bus_t bus, i2c_msg_t *p_msg);
 void i2c_receive_as_master_with_isr(i2c_bus_t bus, i2c_msg_t *p_msg);
+
+void i2c_set_irq_enabled(i2c_bus_t bus, i2c_irq_t irq, bool b_enabled);
 
 #endif /* I2C_H */
