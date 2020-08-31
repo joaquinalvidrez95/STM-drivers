@@ -84,6 +84,7 @@ static inline void execute_address_phase(i2c_bus_t bus, uint8_t slave_address, o
 static inline void execute_blocking_address_phase(i2c_bus_t bus, uint8_t slave_address, operation_t operation);
 static inline void clear_addr(i2c_bus_t bus);
 static inline bool is_tx_data_reg_empty(i2c_bus_t bus);
+static inline bool is_rx_data_reg_not_empty(i2c_bus_t bus);
 static inline void wait_until_tx_data_reg_empty(i2c_bus_t bus);
 static inline bool is_byte_transfer_finished(i2c_bus_t bus);
 static inline uint16_t calculate_rise_time(const i2c_cfg_t *p_cfg, uint32_t pclk1);
@@ -98,8 +99,14 @@ static inline bool has_bus_error(i2c_bus_t bus);
 static inline void handle_start_condition_interrupt(i2c_bus_t bus);
 static inline void handle_addr_interrupt(i2c_bus_t bus);
 static inline void handle_byte_transfer_finished_interrupt(i2c_bus_t bus);
+static inline void handle_txe_interrupt(i2c_bus_t bus);
+static inline void handle_rxne_interrupt(i2c_bus_t bus);
+static inline void handle_master_rxne_interrupt(i2c_bus_t bus);
 static inline bool is_msg_done(i2c_bus_t bus);
-static inline void close_tx_data(i2c_bus_t bus);
+static inline void close_operation_data(i2c_bus_t bus, operation_t operation);
+static inline void clear_stopf(i2c_bus_t bus);
+static inline bool is_master(i2c_bus_t bus);
+static inline bool is_transmitter(i2c_bus_t bus);
 
 static i2c_handle_t g_handles[I2C_BUS_TOTAL] = {
     [I2C_BUS_1] = {.p_reg = I2C1},
@@ -232,6 +239,7 @@ void i2c_set_irq_enabled(i2c_bus_t bus, i2c_irq_t irq, bool b_enabled)
 
 void i2c_set_peripheral_enabled(i2c_bus_t bus, bool b_enabled)
 {
+    /* TODO: Use utils */
     if (b_enabled)
     {
         g_handles[bus].p_reg->CR1 |= (uint16_t)CR1_PE;
@@ -263,8 +271,10 @@ void i2c_set_ack(i2c_bus_t bus, i2c_ack_control_t ack)
 
 void i2c_handle_ev_irq(i2c_bus_t bus)
 {
-    if (utils_is_bit_set_u16(g_handles[bus].p_reg->SR1, CR2_ITEVTEN))
+    if (utils_is_bit_set_u16(g_handles[bus].p_reg->CR2, CR2_ITEVTEN))
     {
+        const bool is_buf_interrupt_enabled = utils_is_bit_set_u16(g_handles[bus].p_reg->CR2, CR2_ITBUFEN);
+
         if (is_start_condition_generated(bus))
         {
             handle_start_condition_interrupt(bus);
@@ -276,6 +286,19 @@ void i2c_handle_ev_irq(i2c_bus_t bus)
         if (is_byte_transfer_finished(bus))
         {
             handle_byte_transfer_finished_interrupt(bus);
+        }
+        if (utils_is_bit_set_u16(g_handles[bus].p_reg->SR1, SR1_STOPF))
+        {
+            clear_stopf(bus);
+            g_handles[bus].p_cfg->interrupt_cb(I2C_INTERRUPT_EV_STOP);
+        }
+        if (is_tx_data_reg_empty(bus) && is_buf_interrupt_enabled)
+        {
+            handle_txe_interrupt(bus);
+        }
+        if (is_rx_data_reg_not_empty(bus) && is_buf_interrupt_enabled)
+        {
+            handle_rxne_interrupt(bus);
         }
     }
 }
@@ -319,7 +342,7 @@ void i2c_handle_err_irq(i2c_bus_t bus)
 
 static inline void wait_until_rx_data_reg_not_empty(i2c_bus_t bus)
 {
-    while (!utils_is_bit_set_u16(g_handles[bus].p_reg->SR1, SR1_RXNE))
+    while (!is_rx_data_reg_not_empty(bus))
     {
     }
 }
@@ -473,6 +496,11 @@ static inline bool is_tx_data_reg_empty(i2c_bus_t bus)
     return utils_is_bit_set_u16(g_handles[bus].p_reg->SR1, SR1_TXE);
 }
 
+static inline bool is_rx_data_reg_not_empty(i2c_bus_t bus)
+{
+    return utils_is_bit_set_u16(g_handles[bus].p_reg->SR1, SR1_RXNE);
+}
+
 static inline void wait_until_tx_data_reg_empty(i2c_bus_t bus)
 {
     while (!is_tx_data_reg_empty(bus))
@@ -502,8 +530,7 @@ static inline uint16_t calculate_rise_time(const i2c_cfg_t *p_cfg, uint32_t pclk
 /* TODO: Refactor logic */
 static inline void handle_addr_interrupt(i2c_bus_t bus)
 {
-    /* Checks if it's master */
-    if (utils_is_bit_set_u16(g_handles[bus].p_reg->SR2, SR2_MSL))
+    if (is_master(bus))
     {
         if (I2C_STATE_BUSY_IN_RX == g_handles[bus].irq_mgr.state)
         {
@@ -534,7 +561,7 @@ static inline void handle_byte_transfer_finished_interrupt(i2c_bus_t bus)
         {
             generate_stop_condition(bus);
         }
-        close_tx_data(bus);
+        close_operation_data(bus, OPERATION_WRITE);
         g_handles[bus].p_cfg->interrupt_cb(I2C_INTERRUPT_EV_TX_DONE);
     }
 }
@@ -544,11 +571,101 @@ static inline bool is_msg_done(i2c_bus_t bus)
     return g_handles[bus].irq_mgr.msg_idx >= g_handles[bus].irq_mgr.p_msg->size;
 }
 
-static inline void close_tx_data(i2c_bus_t bus)
+static inline void close_operation_data(i2c_bus_t bus, operation_t operation)
 {
+
     enable_buffer_interrupt(bus, false);
     enable_event_interrupt(bus, false);
     g_handles[bus].irq_mgr.state = I2C_STATE_READY;
     g_handles[bus].irq_mgr.msg_idx = 0u;
     g_handles[bus].irq_mgr.p_msg = NULL;
+
+    if ((OPERATION_READ == operation) && (I2C_ACK_CONTROL_ENABLED == g_handles[bus].p_cfg->ack_control))
+    {
+        i2c_set_ack(bus, I2C_ACK_CONTROL_ENABLED);
+    }
+}
+
+static inline void clear_stopf(i2c_bus_t bus)
+{
+    g_handles[bus].p_reg->CR1 |= 0u;
+}
+
+static inline void handle_txe_interrupt(i2c_bus_t bus)
+{
+    if (is_master(bus))
+    {
+        if ((I2C_STATE_BUSY_IN_TX == g_handles[bus].irq_mgr.state) && (!is_msg_done(bus)))
+        {
+            g_handles[bus].p_reg->DR = g_handles[bus].irq_mgr.p_msg->buffer[g_handles[bus].irq_mgr.msg_idx];
+            g_handles[bus].irq_mgr.msg_idx++;
+        }
+    }
+    else if (is_transmitter(bus))
+    {
+        g_handles[bus].p_cfg->interrupt_cb(I2C_INTERRUPT_EV_DATA_REQ);
+    }
+    else
+    {
+    }
+}
+
+static inline void handle_rxne_interrupt(i2c_bus_t bus)
+{
+    if (is_master(bus))
+    {
+        if ((I2C_STATE_BUSY_IN_RX == g_handles[bus].irq_mgr.state) && (!is_msg_done(bus)))
+        {
+            handle_master_rxne_interrupt(bus);
+        }
+    }
+    else if (!is_transmitter(bus))
+    {
+        g_handles[bus].p_cfg->interrupt_cb(I2C_INTERRUPT_EV_DATA_RCV);
+    }
+    else
+    {
+    }
+}
+
+/* TODO: Reuse code with normal reception */
+static inline void handle_master_rxne_interrupt(i2c_bus_t bus)
+{
+    if (1u == g_handles[bus].irq_mgr.p_msg->size)
+    {
+        g_handles[bus].irq_mgr.p_msg->buffer[g_handles->irq_mgr.msg_idx] = g_handles[bus].p_reg->DR;
+        g_handles[bus].irq_mgr.msg_idx++;
+    }
+    else if (1u < g_handles[bus].irq_mgr.p_msg->size)
+    {
+        if ((g_handles[bus].irq_mgr.p_msg->size - 2u) == g_handles[bus].irq_mgr.msg_idx)
+        {
+            i2c_set_ack(bus, I2C_ACK_CONTROL_DISABLED);
+        }
+    }
+    else
+    {
+    }
+
+    if (is_msg_done(bus))
+    {
+        if (I2C_REPEATED_START_DISABLED == g_handles[bus].irq_mgr.p_msg->repeated_start)
+        {
+            generate_stop_condition(bus);
+        }
+
+        close_operation_data(bus, OPERATION_READ);
+
+        g_handles[bus].p_cfg->interrupt_cb(I2C_INTERRUPT_EV_RX_DONE);
+    }
+}
+
+static inline bool is_master(i2c_bus_t bus)
+{
+    return utils_is_bit_set_u16(g_handles[bus].p_reg->SR2, SR2_MSL);
+}
+
+static inline bool is_transmitter(i2c_bus_t bus)
+{
+    return utils_is_bit_set_u16(g_handles[bus].p_reg->SR2, SR2_TRA);
 }
