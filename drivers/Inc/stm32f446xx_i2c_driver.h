@@ -43,6 +43,11 @@ typedef enum
 
 typedef enum
 {
+    I2C_INTERRUPT_EV_TX_DONE,
+    I2C_INTERRUPT_EV_RX_DONE,
+    I2C_INTERRUPT_EV_STOP,
+    I2C_INTERRUPT_EV_DATA_REQ,
+    I2C_INTERRUPT_EV_DATA_RCV,
     I2C_INTERRUPT_ERR_BERR,
     I2C_INTERRUPT_ERR_ARLO,
     I2C_INTERRUPT_ERR_AF,
@@ -63,7 +68,7 @@ typedef enum
     I2C_REPEATED_START_ENABLED,
 } i2c_repeated_start_t;
 
-typedef void (*i2c_irq_callback_t)(i2c_interrupt_t irq);
+typedef void (*i2c_interrupt_callback_t)(i2c_interrupt_t interrupt);
 
 typedef struct
 {
@@ -72,7 +77,7 @@ typedef struct
     uint8_t device_address;
     i2c_ack_control_t ack_control;
     i2c_fm_duty_t fm_duty_cycle;
-    i2c_irq_callback_t irq_cb;
+    i2c_interrupt_callback_t interrupt_cb;
 } i2c_cfg_t;
 
 /**
@@ -88,7 +93,7 @@ typedef struct
 } i2c_msg_t;
 
 void i2c_init(const i2c_cfg_t *p_cfg);
-void i2c_deinit(volatile i2c_reg_t *p_reg);
+void i2c_deinit(i2c_bus_t bus);
 
 void i2c_enable_peripheral(i2c_bus_t bus, bool b_enabled);
 void i2c_set_ack(i2c_bus_t bus, i2c_ack_control_t ack);
@@ -100,5 +105,7 @@ void i2c_transmit_as_master_with_isr(i2c_bus_t bus, i2c_msg_t *p_msg);
 void i2c_receive_as_master_with_isr(i2c_bus_t bus, i2c_msg_t *p_msg);
 
 void i2c_set_irq_enabled(i2c_bus_t bus, i2c_irq_t irq, bool b_enabled);
+void i2c_handle_ev_irq(i2c_bus_t bus);
+void i2c_handle_err_irq(i2c_bus_t bus);
 
 #endif /* I2C_H */
