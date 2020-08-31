@@ -59,7 +59,7 @@ void nucleo_init_i2c(void)
     gpio_init(&pin);
 
     i2c_init(&g_i2c_cfg);
-    i2c_enable_peripheral(g_i2c_cfg.bus, true);
+    i2c_set_peripheral_enabled(g_i2c_cfg.bus, true);
     i2c_set_ack(g_i2c_cfg.bus, I2C_ACK_CONTROL_ENABLED);
 }
 

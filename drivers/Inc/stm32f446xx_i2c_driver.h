@@ -95,7 +95,7 @@ typedef struct
 void i2c_init(const i2c_cfg_t *p_cfg);
 void i2c_deinit(i2c_bus_t bus);
 
-void i2c_enable_peripheral(i2c_bus_t bus, bool b_enabled);
+void i2c_set_peripheral_enabled(i2c_bus_t bus, bool b_enabled);
 void i2c_set_ack(i2c_bus_t bus, i2c_ack_control_t ack);
 
 void i2c_transmit_as_master(i2c_bus_t bus, const i2c_msg_t *p_msg);
