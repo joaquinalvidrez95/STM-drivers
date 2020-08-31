@@ -153,7 +153,7 @@ void i2c_transmit_as_master(i2c_bus_t bus, const i2c_msg_t *p_msg)
     while (!is_byte_transfer_finished(bus))
     {
     }
-    if (!p_msg->repeated_start)
+    if (I2C_REPEATED_START_DISABLED == p_msg->repeated_start)
     {
         generate_stop_condition(bus);
     }
@@ -170,7 +170,7 @@ void i2c_receive_as_master(i2c_bus_t bus, i2c_msg_t *p_msg)
         i2c_set_ack(bus, I2C_ACK_CONTROL_DISABLED);
         clear_addr(bus);
         wait_until_rx_data_reg_not_empty(bus);
-        if (!p_msg->repeated_start)
+        if (I2C_REPEATED_START_DISABLED == p_msg->repeated_start)
         {
             generate_stop_condition(bus);
         }
@@ -186,7 +186,7 @@ void i2c_receive_as_master(i2c_bus_t bus, i2c_msg_t *p_msg)
             if ((p_msg->size - 2u) == buf_idx)
             {
                 i2c_set_ack(bus, I2C_ACK_CONTROL_DISABLED);
-                if (!p_msg->repeated_start)
+                if (I2C_REPEATED_START_DISABLED == p_msg->repeated_start)
                 {
                     generate_stop_condition(bus);
                 }
@@ -631,20 +631,14 @@ static inline void handle_rxne_interrupt(i2c_bus_t bus)
 /* TODO: Reuse code with normal reception */
 static inline void handle_master_rxne_interrupt(i2c_bus_t bus)
 {
-    if (1u == g_handles[bus].irq_mgr.p_msg->size)
+    if (0u < g_handles[bus].irq_mgr.p_msg->size)
     {
-        g_handles[bus].irq_mgr.p_msg->buffer[g_handles->irq_mgr.msg_idx] = g_handles[bus].p_reg->DR;
-        g_handles[bus].irq_mgr.msg_idx++;
-    }
-    else if (1u < g_handles[bus].irq_mgr.p_msg->size)
-    {
-        if ((g_handles[bus].irq_mgr.p_msg->size - 2u) == g_handles[bus].irq_mgr.msg_idx)
+        if ((1u < g_handles[bus].irq_mgr.p_msg->size) && ((g_handles[bus].irq_mgr.p_msg->size - 2u) == g_handles[bus].irq_mgr.msg_idx))
         {
             i2c_set_ack(bus, I2C_ACK_CONTROL_DISABLED);
         }
-    }
-    else
-    {
+        g_handles[bus].irq_mgr.p_msg->buffer[g_handles->irq_mgr.msg_idx] = g_handles[bus].p_reg->DR;
+        g_handles[bus].irq_mgr.msg_idx++;
     }
 
     if (is_msg_done(bus))
