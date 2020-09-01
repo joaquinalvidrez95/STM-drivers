@@ -184,15 +184,7 @@ void i2c_set_irq_enabled(i2c_bus_t bus, i2c_irq_t irq, bool b_enabled)
 
 void i2c_set_peripheral_enabled(i2c_bus_t bus, bool b_enabled)
 {
-    /* TODO: Use utils */
-    if (b_enabled)
-    {
-        g_handles[bus].p_reg->CR1 |= (uint16_t)CR1_PE;
-    }
-    else
-    {
-        g_handles[bus].p_reg->CR1 &= ~((uint16_t)CR1_PE);
-    }
+    utils_set_bit_u16(&g_handles[bus].p_reg->CR1, CR1_PE, b_enabled);
 }
 
 void i2c_deinit(i2c_bus_t bus)
@@ -203,15 +195,7 @@ void i2c_deinit(i2c_bus_t bus)
 
 void i2c_set_ack(i2c_bus_t bus, i2c_ack_control_t ack)
 {
-    /* TODO: Use utils */
-    if (I2C_ACK_CONTROL_ENABLED == ack)
-    {
-        g_handles[bus].p_reg->CR1 |= CR1_ACK;
-    }
-    else
-    {
-        g_handles[bus].p_reg->CR1 &= ~CR1_ACK;
-    }
+    utils_set_bit_u16(&g_handles[bus].p_reg->CR1, CR1_ACK, I2C_ACK_CONTROL_ENABLED == ack);
 }
 
 void i2c_handle_ev_irq(i2c_bus_t bus)
@@ -399,8 +383,7 @@ static inline void generate_blocking_start_condition(i2c_bus_t bus)
 
 static inline void generate_stop_condition(i2c_bus_t bus)
 {
-    /* TODO: Use utils */
-    g_handles[bus].p_reg->CR1 |= CR1_STOP;
+    utils_set_bit_u16(&g_handles[bus].p_reg->CR1, CR1_STOP, true)
 }
 
 static inline bool is_start_condition_generated(i2c_bus_t bus)
