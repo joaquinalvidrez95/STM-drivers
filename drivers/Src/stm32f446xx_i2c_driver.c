@@ -107,10 +107,9 @@ static inline void close_operation_data(i2c_bus_t bus, operation_t operation);
 static inline void clear_stopf(i2c_bus_t bus);
 static inline bool is_master(i2c_bus_t bus);
 static inline bool is_transmitter(i2c_bus_t bus);
-static void transmit_as_master_with_isr(i2c_bus_t bus, i2c_msg_t *p_msg);
+static void setup_operation_with_interrupts(i2c_bus_t bus, i2c_msg_t *p_msg, operation_t operation);
 static void transmit_as_master_with_polling(i2c_bus_t bus, const i2c_msg_t *p_msg);
 static void receive_as_master_with_polling(i2c_bus_t bus, i2c_msg_t *p_msg);
-static void receive_as_master_with_isr(i2c_bus_t bus, i2c_msg_t *p_msg);
 
 static i2c_handle_t g_handles[I2C_BUS_TOTAL] = {
     [I2C_BUS_1] = {.p_reg = I2C1},
@@ -148,7 +147,7 @@ void i2c_transmit_as_master(i2c_bus_t bus, i2c_msg_t *p_msg, utils_mechanism_t m
         break;
 
     case UTILS_MECHANISM_INTERRUPT:
-        transmit_as_master_with_isr(bus, p_msg);
+        setup_operation_with_interrupts(bus, p_msg, OPERATION_WRITE);
         break;
 
     default:
@@ -165,7 +164,7 @@ void i2c_receive_as_master(i2c_bus_t bus, i2c_msg_t *p_msg, utils_mechanism_t me
         break;
 
     case UTILS_MECHANISM_INTERRUPT:
-        receive_as_master_with_isr(bus, p_msg);
+        setup_operation_with_interrupts(bus, p_msg, OPERATION_READ);
         break;
 
     default:
@@ -643,29 +642,6 @@ static void transmit_as_master_with_polling(i2c_bus_t bus, const i2c_msg_t *p_ms
     }
 }
 
-static void transmit_as_master_with_isr(i2c_bus_t bus, i2c_msg_t *p_msg)
-{
-    if (I2C_STATE_READY == g_handles[bus].irq_mgr.state)
-    {
-        g_handles[bus].irq_mgr.p_msg = p_msg;
-        g_handles[bus].irq_mgr.state = I2C_STATE_BUSY_IN_TX;
-        generate_start_condition(bus);
-        enable_buffer_interrupt(bus, true);
-    }
-}
-
-/* TODO: Reuse code Tx/Rx */
-static void receive_as_master_with_isr(i2c_bus_t bus, i2c_msg_t *p_msg)
-{
-    if (I2C_STATE_READY == g_handles[bus].irq_mgr.state)
-    {
-        g_handles[bus].irq_mgr.p_msg = p_msg;
-        g_handles[bus].irq_mgr.state = I2C_STATE_BUSY_IN_RX;
-        generate_start_condition(bus);
-        enable_buffer_interrupt(bus, true);
-    }
-}
-
 static void receive_as_master_with_polling(i2c_bus_t bus, i2c_msg_t *p_msg)
 {
     generate_blocking_start_condition(bus);
@@ -708,5 +684,16 @@ static void receive_as_master_with_polling(i2c_bus_t bus, i2c_msg_t *p_msg)
     if (I2C_ACK_CONTROL_ENABLED == g_handles[bus].p_cfg->ack_control)
     {
         i2c_set_ack(bus, I2C_ACK_CONTROL_ENABLED);
+    }
+}
+
+static void setup_operation_with_interrupts(i2c_bus_t bus, i2c_msg_t *p_msg, operation_t operation)
+{
+    if (I2C_STATE_READY == g_handles[bus].irq_mgr.state)
+    {
+        g_handles[bus].irq_mgr.p_msg = p_msg;
+        g_handles[bus].irq_mgr.state = (OPERATION_WRITE == operation) ? I2C_STATE_BUSY_IN_TX : I2C_STATE_BUSY_IN_RX;
+        generate_start_condition(bus);
+        enable_interrupts(bus, true);
     }
 }
