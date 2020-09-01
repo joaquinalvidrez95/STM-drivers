@@ -87,24 +87,36 @@ void arduino_read_id(spi_handle_t *spi, char id[], size_t length)
     }
 }
 
-uint8_t arduino_i2c_get_length(i2c_bus_t bus)
+uint8_t arduino_i2c_get_length(i2c_bus_t bus, utils_mechanism_t mechanism)
 {
     uint8_t length = 0u;
+
     i2c_transmit_as_master(bus,
-                           &(const i2c_msg_t){
+                           &(i2c_msg_t){
                                .slave_address = ARDUINO_I2C_ADDRESS,
                                .size = sizeof(uint8_t),
                                .buffer = &(uint8_t){ARDUINO_I2C_COMMAND_READ_LENGTH},
                                .repeated_start = I2C_REPEATED_START_ENABLED,
-                           });
+                           },
+                           mechanism);
+
+    while ((UTILS_MECHANISM_INTERRUPT == mechanism) && (!i2c_is_interrupt_rx_tx_done(bus)))
+    {
+    }
 
     i2c_receive_as_master(bus,
                           &(i2c_msg_t){
                               .slave_address = ARDUINO_I2C_ADDRESS,
                               .size = sizeof(length),
                               .buffer = &length,
-                              .repeated_start = I2C_REPEATED_START_DISABLED,
-                          });
+                              .repeated_start = I2C_REPEATED_START_ENABLED,
+                          },
+                          mechanism);
+
+    while ((UTILS_MECHANISM_INTERRUPT == mechanism) && (!i2c_is_interrupt_rx_tx_done(bus)))
+    {
+    }
+
     return length;
 }
 

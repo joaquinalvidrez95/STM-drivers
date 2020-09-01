@@ -11,6 +11,7 @@
 #include "stm32f446xx_spi_driver.h"
 #include "stm32f446xx_i2c_driver.h"
 #include <stdbool.h>
+#include "utils.h"
 
 typedef enum
 {
@@ -64,6 +65,6 @@ void arduino_print(spi_handle_t *spi, const char message[]);
 
 void arduino_read_id(spi_handle_t *spi, char id[], size_t length);
 
-uint8_t arduino_i2c_get_length(i2c_bus_t bus);
+uint8_t arduino_i2c_get_length(i2c_bus_t bus, utils_mechanism_t mechanism);
 
 #endif /* ARDUINO_H_ */

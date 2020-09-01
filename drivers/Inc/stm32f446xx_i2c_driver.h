@@ -6,6 +6,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <stddef.h>
+#include "utils.h"
 
 typedef enum
 {
@@ -98,11 +99,10 @@ void i2c_deinit(i2c_bus_t bus);
 void i2c_set_peripheral_enabled(i2c_bus_t bus, bool b_enabled);
 void i2c_set_ack(i2c_bus_t bus, i2c_ack_control_t ack);
 
-void i2c_transmit_as_master(i2c_bus_t bus, const i2c_msg_t *p_msg);
-void i2c_receive_as_master(i2c_bus_t bus, i2c_msg_t *p_msg);
+void i2c_transmit_as_master(i2c_bus_t bus, i2c_msg_t *p_msg, utils_mechanism_t mechanism);
+void i2c_receive_as_master(i2c_bus_t bus, i2c_msg_t *p_msg, utils_mechanism_t mechanism);
 
-void i2c_transmit_as_master_with_isr(i2c_bus_t bus, i2c_msg_t *p_msg);
-void i2c_receive_as_master_with_isr(i2c_bus_t bus, i2c_msg_t *p_msg);
+bool i2c_is_interrupt_rx_tx_done(i2c_bus_t bus);
 
 void i2c_set_irq_enabled(i2c_bus_t bus, i2c_irq_t irq, bool b_enabled);
 void i2c_handle_ev_irq(i2c_bus_t bus);

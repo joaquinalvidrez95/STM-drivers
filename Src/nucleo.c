@@ -37,7 +37,7 @@ void nucleo_init_button(void)
     gpio_init(&g_button);
 }
 
-void nucleo_init_i2c(void)
+void nucleo_init_i2c(i2c_interrupt_callback_t callback)
 {
     gpio_handle_t pin = {
         .p_reg = GPIOB,
@@ -58,6 +58,7 @@ void nucleo_init_i2c(void)
     pin.cfg.number = GPIO_PIN_9;
     gpio_init(&pin);
 
+    g_i2c_cfg.interrupt_cb = callback;
     i2c_init(&g_i2c_cfg);
     i2c_set_peripheral_enabled(g_i2c_cfg.bus, true);
     i2c_set_ack(g_i2c_cfg.bus, I2C_ACK_CONTROL_ENABLED);

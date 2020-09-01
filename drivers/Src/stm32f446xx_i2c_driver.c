@@ -107,6 +107,10 @@ static inline void close_operation_data(i2c_bus_t bus, operation_t operation);
 static inline void clear_stopf(i2c_bus_t bus);
 static inline bool is_master(i2c_bus_t bus);
 static inline bool is_transmitter(i2c_bus_t bus);
+static void transmit_as_master_with_isr(i2c_bus_t bus, i2c_msg_t *p_msg);
+static void transmit_as_master_with_polling(i2c_bus_t bus, const i2c_msg_t *p_msg);
+static void receive_as_master_with_polling(i2c_bus_t bus, i2c_msg_t *p_msg);
+static void receive_as_master_with_isr(i2c_bus_t bus, i2c_msg_t *p_msg);
 
 static i2c_handle_t g_handles[I2C_BUS_TOTAL] = {
     [I2C_BUS_1] = {.p_reg = I2C1},
@@ -135,95 +139,37 @@ void i2c_init(const i2c_cfg_t *p_cfg)
     g_handles[p_cfg->bus].p_reg->TRISE = calculate_rise_time(p_cfg, pclk1);
 }
 
-void i2c_transmit_as_master(i2c_bus_t bus, const i2c_msg_t *p_msg)
+void i2c_transmit_as_master(i2c_bus_t bus, i2c_msg_t *p_msg, utils_mechanism_t mechanism)
 {
-    generate_blocking_start_condition(bus);
-
-    execute_blocking_address_phase(bus, p_msg->slave_address, OPERATION_WRITE);
-    clear_addr(bus);
-
-    for (uint8_t buf_idx = 0u; buf_idx < p_msg->size; buf_idx++)
+    switch (mechanism)
     {
-        wait_until_tx_data_reg_empty(bus);
-        g_handles[bus].p_reg->DR = p_msg->buffer[buf_idx];
-    }
+    case UTILS_MECHANISM_POLLING:
+        transmit_as_master_with_polling(bus, p_msg);
+        break;
 
-    wait_until_tx_data_reg_empty(bus);
+    case UTILS_MECHANISM_INTERRUPT:
+        transmit_as_master_with_isr(bus, p_msg);
+        break;
 
-    while (!is_byte_transfer_finished(bus))
-    {
-    }
-    if (I2C_REPEATED_START_DISABLED == p_msg->repeated_start)
-    {
-        generate_stop_condition(bus);
+    default:
+        break;
     }
 }
 
-void i2c_receive_as_master(i2c_bus_t bus, i2c_msg_t *p_msg)
+void i2c_receive_as_master(i2c_bus_t bus, i2c_msg_t *p_msg, utils_mechanism_t mechanism)
 {
-    generate_blocking_start_condition(bus);
+    switch (mechanism)
+    {
+    case UTILS_MECHANISM_POLLING:
+        receive_as_master_with_polling(bus, p_msg);
+        break;
 
-    execute_blocking_address_phase(bus, p_msg->slave_address, OPERATION_READ);
+    case UTILS_MECHANISM_INTERRUPT:
+        receive_as_master_with_isr(bus, p_msg);
+        break;
 
-    if (1u == p_msg->size)
-    {
-        i2c_set_ack(bus, I2C_ACK_CONTROL_DISABLED);
-        clear_addr(bus);
-        wait_until_rx_data_reg_not_empty(bus);
-        if (I2C_REPEATED_START_DISABLED == p_msg->repeated_start)
-        {
-            generate_stop_condition(bus);
-        }
-        p_msg->buffer[0] = g_handles[bus].p_reg->DR;
-    }
-    else if (1u < p_msg->size)
-    {
-        /* TODO: Refactor nested ifs */
-        clear_addr(bus);
-        for (uint8_t buf_idx = 0u; buf_idx < p_msg->size; buf_idx++)
-        {
-            wait_until_rx_data_reg_not_empty(bus);
-            if ((p_msg->size - 2u) == buf_idx)
-            {
-                i2c_set_ack(bus, I2C_ACK_CONTROL_DISABLED);
-                if (I2C_REPEATED_START_DISABLED == p_msg->repeated_start)
-                {
-                    generate_stop_condition(bus);
-                }
-            }
-            p_msg->buffer[buf_idx] = g_handles[bus].p_reg->DR;
-        }
-    }
-    else
-    {
-    }
-
-    if (I2C_ACK_CONTROL_ENABLED == g_handles[bus].p_cfg->ack_control)
-    {
-        i2c_set_ack(bus, I2C_ACK_CONTROL_ENABLED);
-    }
-}
-
-void i2c_transmit_as_master_with_isr(i2c_bus_t bus, i2c_msg_t *p_msg)
-{
-    if (I2C_STATE_READY == g_handles[bus].irq_mgr.state)
-    {
-        g_handles[bus].irq_mgr.p_msg = p_msg;
-        g_handles[bus].irq_mgr.state = I2C_STATE_BUSY_IN_TX;
-        generate_start_condition(bus);
-        enable_buffer_interrupt(bus, true);
-    }
-}
-
-/* TODO: Reuse code Tx/Rx */
-void i2c_receive_as_master_with_isr(i2c_bus_t bus, i2c_msg_t *p_msg)
-{
-    if (I2C_STATE_READY == g_handles[bus].irq_mgr.state)
-    {
-        g_handles[bus].irq_mgr.p_msg = p_msg;
-        g_handles[bus].irq_mgr.state = I2C_STATE_BUSY_IN_RX;
-        generate_start_condition(bus);
-        enable_buffer_interrupt(bus, true);
+    default:
+        break;
     }
 }
 
@@ -340,6 +286,11 @@ void i2c_handle_err_irq(i2c_bus_t bus)
     }
 }
 
+bool i2c_is_interrupt_rx_tx_done(i2c_bus_t bus)
+{
+    return g_handles[bus].irq_mgr.state == I2C_STATE_READY;
+}
+
 static inline void wait_until_rx_data_reg_not_empty(i2c_bus_t bus)
 {
     while (!is_rx_data_reg_not_empty(bus))
@@ -371,6 +322,9 @@ static inline void handle_err_interrupt(i2c_bus_t bus, i2c_interrupt_t it, uint1
 {
     /* Clears interrupt flag */
     g_handles[bus].p_reg->SR1 &= ~mask;
+
+    close_operation_data(bus, OPERATION_WRITE);
+    generate_stop_condition(bus);
 
     if (NULL != g_handles[bus].p_cfg->interrupt_cb)
     {
@@ -446,6 +400,7 @@ static inline void generate_blocking_start_condition(i2c_bus_t bus)
 
 static inline void generate_stop_condition(i2c_bus_t bus)
 {
+    /* TODO: Use utils */
     g_handles[bus].p_reg->CR1 |= CR1_STOP;
 }
 
@@ -662,4 +617,96 @@ static inline bool is_master(i2c_bus_t bus)
 static inline bool is_transmitter(i2c_bus_t bus)
 {
     return utils_is_bit_set_u16(g_handles[bus].p_reg->SR2, SR2_TRA);
+}
+
+static void transmit_as_master_with_polling(i2c_bus_t bus, const i2c_msg_t *p_msg)
+{
+    generate_blocking_start_condition(bus);
+
+    execute_blocking_address_phase(bus, p_msg->slave_address, OPERATION_WRITE);
+    clear_addr(bus);
+
+    for (uint8_t buf_idx = 0u; buf_idx < p_msg->size; buf_idx++)
+    {
+        wait_until_tx_data_reg_empty(bus);
+        g_handles[bus].p_reg->DR = p_msg->buffer[buf_idx];
+    }
+
+    wait_until_tx_data_reg_empty(bus);
+
+    while (!is_byte_transfer_finished(bus))
+    {
+    }
+    if (I2C_REPEATED_START_DISABLED == p_msg->repeated_start)
+    {
+        generate_stop_condition(bus);
+    }
+}
+
+static void transmit_as_master_with_isr(i2c_bus_t bus, i2c_msg_t *p_msg)
+{
+    if (I2C_STATE_READY == g_handles[bus].irq_mgr.state)
+    {
+        g_handles[bus].irq_mgr.p_msg = p_msg;
+        g_handles[bus].irq_mgr.state = I2C_STATE_BUSY_IN_TX;
+        generate_start_condition(bus);
+        enable_buffer_interrupt(bus, true);
+    }
+}
+
+/* TODO: Reuse code Tx/Rx */
+static void receive_as_master_with_isr(i2c_bus_t bus, i2c_msg_t *p_msg)
+{
+    if (I2C_STATE_READY == g_handles[bus].irq_mgr.state)
+    {
+        g_handles[bus].irq_mgr.p_msg = p_msg;
+        g_handles[bus].irq_mgr.state = I2C_STATE_BUSY_IN_RX;
+        generate_start_condition(bus);
+        enable_buffer_interrupt(bus, true);
+    }
+}
+
+static void receive_as_master_with_polling(i2c_bus_t bus, i2c_msg_t *p_msg)
+{
+    generate_blocking_start_condition(bus);
+
+    execute_blocking_address_phase(bus, p_msg->slave_address, OPERATION_READ);
+
+    if (1u == p_msg->size)
+    {
+        i2c_set_ack(bus, I2C_ACK_CONTROL_DISABLED);
+        clear_addr(bus);
+        wait_until_rx_data_reg_not_empty(bus);
+        if (I2C_REPEATED_START_DISABLED == p_msg->repeated_start)
+        {
+            generate_stop_condition(bus);
+        }
+        p_msg->buffer[0] = g_handles[bus].p_reg->DR;
+    }
+    else if (1u < p_msg->size)
+    {
+        /* TODO: Refactor nested ifs */
+        clear_addr(bus);
+        for (uint8_t buf_idx = 0u; buf_idx < p_msg->size; buf_idx++)
+        {
+            wait_until_rx_data_reg_not_empty(bus);
+            if ((p_msg->size - 2u) == buf_idx)
+            {
+                i2c_set_ack(bus, I2C_ACK_CONTROL_DISABLED);
+                if (I2C_REPEATED_START_DISABLED == p_msg->repeated_start)
+                {
+                    generate_stop_condition(bus);
+                }
+            }
+            p_msg->buffer[buf_idx] = g_handles[bus].p_reg->DR;
+        }
+    }
+    else
+    {
+    }
+
+    if (I2C_ACK_CONTROL_ENABLED == g_handles[bus].p_cfg->ack_control)
+    {
+        i2c_set_ack(bus, I2C_ACK_CONTROL_ENABLED);
+    }
 }

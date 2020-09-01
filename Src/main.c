@@ -27,8 +27,9 @@
 #define MAIN_009_SPI_ARDUINO_IT 6
 #define MAIN_010_I2C_MASTER_TX 7
 #define MAIN_011_I2C_MASTER_RX (8)
+#define MAIN_012_I2C_MASTER_RX_IT (9)
 
-#define MAIN MAIN_010_I2C_MASTER_TX
+#define MAIN MAIN_012_I2C_MASTER_RX_IT
 
 extern void initialise_monitor_handles();
 
@@ -468,13 +469,14 @@ int main()
     {
         wait_till_button_pressed();
 
-        i2c_transmit_as_master(I2C_BUS_1,
-                               &(const i2c_msg_t){
+        i2c_transmit_as_master(NUCLEO_I2C_BUS,
+                               &(i2c_msg_t){
                                    .buffer = (uint8_t *)&messages[msg_idx][0],
                                    .size = strlen(messages[msg_idx]),
                                    .slave_address = ARDUINO_I2C_ADDRESS,
                                    .repeated_start = I2C_ACK_CONTROL_DISABLED,
-                               });
+                               },
+                               UTILS_MECHANISM_POLLING);
         msg_idx++;
         msg_idx %= NUM_MESSAGES;
     }
@@ -483,7 +485,7 @@ int main()
 static void init(void)
 {
     nucleo_init_button();
-    nucleo_init_i2c();
+    nucleo_init_i2c(NULL);
 }
 
 #elif MAIN == MAIN_011_I2C_MASTER_RX
@@ -502,23 +504,25 @@ int main()
     {
         wait_till_button_pressed();
 
-        const uint8_t msg_length = arduino_i2c_get_length(I2C_BUS_1);
+        const uint8_t msg_length = arduino_i2c_get_length(NUCLEO_I2C_BUS, UTILS_MECHANISM_POLLING);
 
-        i2c_transmit_as_master(I2C_BUS_1,
-                               &(const i2c_msg_t){
+        i2c_transmit_as_master(NUCLEO_I2C_BUS,
+                               &(i2c_msg_t){
                                    .buffer = &(uint8_t){ARDUINO_I2C_COMMAND_READ_MSG},
                                    .size = sizeof(uint8_t),
                                    .slave_address = ARDUINO_I2C_ADDRESS,
                                    .repeated_start = I2C_ACK_CONTROL_DISABLED,
-                               });
+                               },
+                               UTILS_MECHANISM_POLLING);
 
-        i2c_receive_as_master(I2C_BUS_1,
+        i2c_receive_as_master(NUCLEO_I2C_BUS,
                               &(i2c_msg_t){
                                   .size = msg_length,
                                   .buffer = &buffer[0],
                                   .slave_address = ARDUINO_I2C_ADDRESS,
                                   .repeated_start = I2C_ACK_CONTROL_DISABLED,
-                              });
+                              },
+                              UTILS_MECHANISM_POLLING);
 
         printf("Arduino's message: %s", &buffer[0]);
     }
@@ -528,7 +532,96 @@ static void init(void)
 {
     initialise_monitor_handles();
     nucleo_init_button();
-    nucleo_init_i2c();
+    nucleo_init_i2c(NULL);
+}
+
+#elif MAIN == MAIN_012_I2C_MASTER_RX_IT
+
+static void init(void);
+static void interrupt_callback(i2c_interrupt_t source);
+
+#define BUFFER_SIZE (32u)
+
+int main()
+{
+    init();
+
+    uint8_t buffer[BUFFER_SIZE] = {0u};
+
+    for (;;)
+    {
+        wait_till_button_pressed();
+
+        const uint8_t msg_length = arduino_i2c_get_length(NUCLEO_I2C_BUS, UTILS_MECHANISM_INTERRUPT);
+
+        i2c_transmit_as_master(NUCLEO_I2C_BUS,
+                               &(i2c_msg_t){
+                                   .buffer = &(uint8_t){ARDUINO_I2C_COMMAND_READ_MSG},
+                                   .size = sizeof(uint8_t),
+                                   .slave_address = ARDUINO_I2C_ADDRESS,
+                                   .repeated_start = I2C_ACK_CONTROL_ENABLED,
+                               },
+                               UTILS_MECHANISM_INTERRUPT);
+
+        while (!i2c_is_interrupt_rx_tx_done(NUCLEO_I2C_BUS))
+        {
+        }
+
+        i2c_receive_as_master(NUCLEO_I2C_BUS,
+                              &(i2c_msg_t){
+                                  .size = msg_length,
+                                  .buffer = &buffer[0],
+                                  .slave_address = ARDUINO_I2C_ADDRESS,
+                                  .repeated_start = I2C_ACK_CONTROL_DISABLED,
+                              },
+                              UTILS_MECHANISM_INTERRUPT);
+
+        while (!i2c_is_interrupt_rx_tx_done(NUCLEO_I2C_BUS))
+        {
+        }
+        printf("Arduino's message: %s", &buffer[0]);
+    }
+}
+
+static void init(void)
+{
+    initialise_monitor_handles();
+    nucleo_init_button();
+    i2c_set_irq_enabled(NUCLEO_I2C_BUS, I2C_IRQ_EV, true);
+    i2c_set_irq_enabled(NUCLEO_I2C_BUS, I2C_IRQ_ERR, true);
+    nucleo_init_i2c(interrupt_callback);
+}
+
+void I2C1_EV_IRQHandler(void)
+{
+    i2c_handle_ev_irq(NUCLEO_I2C_BUS);
+}
+
+void I2C1_ER_IRQHandler(void)
+{
+    i2c_handle_err_irq(NUCLEO_I2C_BUS);
+}
+
+static void interrupt_callback(i2c_interrupt_t source)
+{
+    switch (source)
+    {
+    case I2C_INTERRUPT_EV_TX_DONE:
+        printf("Tx is done\n");
+        break;
+    case I2C_INTERRUPT_EV_RX_DONE:
+        printf("Rx is done\n");
+        break;
+    case I2C_INTERRUPT_ERR_AF:
+        printf("Error: ACK failure\n");
+        for (;;)
+        {
+        }
+        break;
+
+    default:
+        break;
+    }
 }
 
 #endif

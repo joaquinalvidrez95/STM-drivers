@@ -11,6 +11,12 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+typedef enum
+{
+    UTILS_MECHANISM_POLLING,
+    UTILS_MECHANISM_INTERRUPT,
+} utils_mechanism_t;
+
 void utils_delay();
 
 inline bool utils_is_bit_set_u16(uint16_t reg, uint16_t mask)
