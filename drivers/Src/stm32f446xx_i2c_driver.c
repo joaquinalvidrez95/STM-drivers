@@ -382,7 +382,7 @@ static inline void generate_blocking_start_condition(i2c_bus_t bus)
 
 static inline void generate_stop_condition(i2c_bus_t bus)
 {
-    utils_set_bit_u16(&g_handles[bus].p_reg->CR1, CR1_STOP, true)
+    utils_set_bit_u16(&g_handles[bus].p_reg->CR1, CR1_STOP, true);
 }
 
 static inline bool is_start_condition_generated(i2c_bus_t bus)
