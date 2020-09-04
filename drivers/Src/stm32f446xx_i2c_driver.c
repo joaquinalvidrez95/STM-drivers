@@ -7,10 +7,6 @@
 #include "utils.h"
 #include <stddef.h>
 
-#define CCR_FAST_STANDARD_MODE (1u << 15u)
-#define MASK_CCR (0xFFFu)
-#define BIT_POSITION_CCR_DUTY (14u)
-
 #define SR1_SB (1u << 0u)
 #define SR1_ADDR (1u << 1u)
 #define SR1_BTF (1u << 2u)
@@ -46,6 +42,9 @@
 
 #define CCR_CCR (1u << 0u)
 #define CCR_DUTY (1u << 14u)
+#define CCR_FAST_STANDARD_MODE (1u << 15u)
+#define BIT_POSITION_CCR_DUTY (14u)
+#define MASK_CCR (0xFFFu)
 
 #define SR2_MSL (1u << 0u)
 #define SR2_BUSY (1u << 1u)
@@ -71,7 +70,7 @@ typedef struct
     irq_manager_t irq_mgr;
     const volatile i2c_cfg_t *p_cfg;
     volatile i2c_reg_t *const p_reg;
-} i2c_handle_t;
+} handle_t;
 
 static inline void reset_reg(uint32_t bit);
 static inline uint16_t calculate_ccr(const i2c_cfg_t *p_cfg, uint32_t pclk1);
@@ -111,7 +110,7 @@ static void setup_operation_with_interrupts(i2c_bus_t bus, i2c_msg_t *p_msg, ope
 static void transmit_as_master_with_polling(i2c_bus_t bus, const i2c_msg_t *p_msg);
 static void receive_as_master_with_polling(i2c_bus_t bus, i2c_msg_t *p_msg);
 
-static i2c_handle_t g_handles[I2C_BUS_TOTAL] = {
+static handle_t g_handles[I2C_BUS_TOTAL] = {
     [I2C_BUS_1] = {.p_reg = I2C1},
     [I2C_BUS_2] = {.p_reg = I2C2},
     [I2C_BUS_3] = {.p_reg = I2C3},
@@ -304,7 +303,7 @@ static inline void enable_interrupts(i2c_bus_t bus, bool b_enabled)
 static inline void handle_err_interrupt(i2c_bus_t bus, i2c_interrupt_t it, uint16_t mask)
 {
     /* Clears interrupt flag */
-    g_handles[bus].p_reg->SR1 &= ~mask;
+    utils_set_bit_u16(&g_handles[bus].p_reg->SR1, mask, false);
 
     close_operation_data(bus, OPERATION_WRITE);
     generate_stop_condition(bus);
