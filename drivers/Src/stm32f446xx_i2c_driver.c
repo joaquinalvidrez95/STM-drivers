@@ -7,11 +7,9 @@
 #include "utils.h"
 #include <stddef.h>
 
-/* TODO: Delete unused macros */
 #define SR1_SB (1u << 0u)
 #define SR1_ADDR (1u << 1u)
 #define SR1_BTF (1u << 2u)
-#define SR1_ADD10 (1u << 3u)
 #define SR1_STOPF (1u << 4u)
 #define SR1_RXNE (1u << 6u)
 #define SR1_TXE (1u << 7u)
@@ -22,15 +20,10 @@
 #define SR1_TIMEOUT (1u << 14u)
 
 #define CR1_PE (1u)
-#define CR1_NOSTRETCH (1u << 7u)
 #define CR1_START (1u << 8u)
 #define CR1_STOP (1u << 9u)
 #define CR1_ACK (1u << 10u)
-#define CR1_POS (1u << 11u)
-#define CR1_PEC (1u << 12u)
-#define CR1_SWRST (1u << 15u)
 
-#define CR2_FREQ (1u << 0u)
 #define CR2_ITERREN (1u << 8u)
 #define CR2_ITEVTEN (1u << 9u)
 #define CR2_ITBUFEN (1u << 10u)
@@ -38,20 +31,15 @@
 #define OAR1_ADD0 (1u << 0u)
 #define OAR1_ADD71 (1u << 1u)
 #define OAR1_ADD98 (1u << 8u)
-#define OAR1_ADDMODE (1u << 15u)
 #define BIT_POSITION_OAR1_ADD (1u)
 
-#define CCR_CCR (1u << 0u)
 #define CCR_DUTY (1u << 14u)
 #define CCR_FAST_STANDARD_MODE (1u << 15u)
 #define BIT_POSITION_CCR_DUTY (14u)
 #define MASK_CCR (0xFFFu)
 
 #define SR2_MSL (1u << 0u)
-#define SR2_BUSY (1u << 1u)
 #define SR2_TRA (1u << 2u)
-#define SR2_GENCALL (1u << 4u)
-#define SR2_DUALF (1u << 7u)
 
 typedef enum
 {
