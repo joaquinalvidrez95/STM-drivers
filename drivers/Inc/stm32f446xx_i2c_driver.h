@@ -47,8 +47,8 @@ typedef enum
     I2C_INTERRUPT_EV_TX_DONE,
     I2C_INTERRUPT_EV_RX_DONE,
     I2C_INTERRUPT_EV_STOP,
-    I2C_INTERRUPT_EV_DATA_REQ,
-    I2C_INTERRUPT_EV_DATA_RCV,
+    I2C_INTERRUPT_EV_SLAVE_TXE,
+    I2C_INTERRUPT_EV_SLAVE_RXNE,
     I2C_INTERRUPT_ERR_BERR,
     I2C_INTERRUPT_ERR_ARLO,
     I2C_INTERRUPT_ERR_AF,
@@ -101,9 +101,11 @@ void i2c_set_ack(i2c_bus_t bus, i2c_ack_control_t ack);
 
 void i2c_transmit_as_master(i2c_bus_t bus, i2c_msg_t *p_msg, utils_mechanism_t mechanism);
 void i2c_receive_as_master(i2c_bus_t bus, i2c_msg_t *p_msg, utils_mechanism_t mechanism);
+void i2c_transmit_as_slave(i2c_bus_t bus, uint8_t data);
+uint8_t i2c_receive_as_slave(i2c_bus_t bus);
 
 bool i2c_is_interrupt_rx_tx_done(i2c_bus_t bus);
-
+void i2c_set_interrupts_enabled(i2c_bus_t bus, bool b_enabled);
 void i2c_set_irq_enabled(i2c_bus_t bus, i2c_irq_t irq, bool b_enabled);
 void i2c_handle_ev_irq(i2c_bus_t bus);
 void i2c_handle_err_irq(i2c_bus_t bus);

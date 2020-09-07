@@ -12,7 +12,7 @@
 #include "stm32f446xx_i2c_driver.h"
 #include "utils.h"
 
-#define ADDRESS_I2C (0x61u)
+#define ADDRESS_I2C (0x69u)
 
 const static gpio_handle_t g_button = {
     .p_reg = GPIOC,

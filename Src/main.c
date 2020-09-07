@@ -28,8 +28,9 @@
 #define MAIN_010_I2C_MASTER_TX 7
 #define MAIN_011_I2C_MASTER_RX (8)
 #define MAIN_012_I2C_MASTER_RX_IT (9)
+#define MAIN_013_I2C_SLAVE_TX (10)
 
-#define MAIN MAIN_012_I2C_MASTER_RX_IT
+#define MAIN MAIN_013_I2C_SLAVE_TX
 
 extern void initialise_monitor_handles();
 
@@ -617,6 +618,83 @@ static void interrupt_callback(i2c_interrupt_t source)
         for (;;)
         {
         }
+        break;
+
+    default:
+        break;
+    }
+}
+
+#elif MAIN == MAIN_013_I2C_SLAVE_TX
+
+static void init(void);
+static void interrupt_callback(i2c_interrupt_t source);
+
+static const volatile char *tx_buffer = "Hello man...";
+
+int main()
+{
+    init();
+    for (;;)
+    {
+    }
+}
+
+static void init(void)
+{
+    initialise_monitor_handles();
+    nucleo_init_button();
+    i2c_set_irq_enabled(NUCLEO_I2C_BUS, I2C_IRQ_EV, true);
+    i2c_set_irq_enabled(NUCLEO_I2C_BUS, I2C_IRQ_ERR, true);
+    nucleo_init_i2c(interrupt_callback);
+    i2c_set_interrupts_enabled(NUCLEO_I2C_BUS, true);
+}
+
+void I2C1_EV_IRQHandler(void)
+{
+    i2c_handle_ev_irq(NUCLEO_I2C_BUS);
+}
+
+void I2C1_ER_IRQHandler(void)
+{
+    i2c_handle_err_irq(NUCLEO_I2C_BUS);
+}
+
+static void interrupt_callback(i2c_interrupt_t source)
+{
+    static volatile uint8_t command = 0u;
+    static volatile uint8_t tx_buf_idx = 0u;
+
+    switch (source)
+    {
+    case I2C_INTERRUPT_EV_SLAVE_TXE:
+        switch (command)
+        {
+        case ARDUINO_I2C_COMMAND_READ_LENGTH:
+            i2c_transmit_as_slave(NUCLEO_I2C_BUS, strlen(tx_buffer));
+            break;
+
+        case ARDUINO_I2C_COMMAND_READ_MSG:
+            i2c_transmit_as_slave(NUCLEO_I2C_BUS, tx_buffer[tx_buf_idx]);
+            tx_buf_idx++;
+            break;
+
+        default:
+            break;
+        }
+
+        break;
+
+    case I2C_INTERRUPT_EV_SLAVE_RXNE:
+        command = i2c_receive_as_slave(NUCLEO_I2C_BUS);
+        break;
+
+    case I2C_INTERRUPT_ERR_AF:
+        command = 0u;
+        tx_buf_idx = 0u;
+        break;
+
+    case I2C_INTERRUPT_EV_STOP:
         break;
 
     default:

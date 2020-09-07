@@ -7,6 +7,7 @@
 #include "utils.h"
 #include <stddef.h>
 
+/* TODO: Delete unused macros */
 #define SR1_SB (1u << 0u)
 #define SR1_ADDR (1u << 1u)
 #define SR1_BTF (1u << 2u)
@@ -91,7 +92,6 @@ static inline void wait_until_rx_data_reg_not_empty(i2c_bus_t bus);
 static inline void enable_buffer_interrupt(i2c_bus_t bus, bool b_enabled);
 static inline void enable_event_interrupt(i2c_bus_t bus, bool b_enabled);
 static inline void enable_err_interrupt(i2c_bus_t bus, bool b_enabled);
-static inline void enable_interrupts(i2c_bus_t bus, bool b_enabled);
 static inline void handle_err_interrupt(i2c_bus_t bus, i2c_interrupt_t it, uint16_t mask);
 static inline bool is_err_interrupt_enabled(i2c_bus_t bus);
 static inline bool has_bus_error(i2c_bus_t bus);
@@ -106,6 +106,7 @@ static inline void close_operation_data(i2c_bus_t bus, operation_t operation);
 static inline void clear_stopf(i2c_bus_t bus);
 static inline bool is_master(i2c_bus_t bus);
 static inline bool is_transmitter(i2c_bus_t bus);
+static void handle_acknowledge_failed_interrupt(i2c_bus_t bus);
 static void setup_operation_with_interrupts(i2c_bus_t bus, i2c_msg_t *p_msg, operation_t operation);
 static void transmit_as_master_with_polling(i2c_bus_t bus, const i2c_msg_t *p_msg);
 static void receive_as_master_with_polling(i2c_bus_t bus, i2c_msg_t *p_msg);
@@ -171,6 +172,16 @@ void i2c_receive_as_master(i2c_bus_t bus, i2c_msg_t *p_msg, utils_mechanism_t me
     }
 }
 
+void i2c_transmit_as_slave(i2c_bus_t bus, uint8_t data)
+{
+    g_handles[bus].p_reg->DR = data;
+}
+
+uint8_t i2c_receive_as_slave(i2c_bus_t bus)
+{
+    return g_handles[bus].p_reg->DR;
+}
+
 void i2c_set_irq_enabled(i2c_bus_t bus, i2c_irq_t irq, bool b_enabled)
 {
     const nvic_irq_num_t irqs[I2C_BUS_TOTAL][I2C_IRQ_TOTAL] = {
@@ -201,7 +212,7 @@ void i2c_handle_ev_irq(i2c_bus_t bus)
 {
     if (utils_is_bit_set_u16(g_handles[bus].p_reg->CR2, CR2_ITEVTEN))
     {
-        const bool is_buf_interrupt_enabled = utils_is_bit_set_u16(g_handles[bus].p_reg->CR2, CR2_ITBUFEN);
+        const bool b_is_buf_interrupt_enabled = utils_is_bit_set_u16(g_handles[bus].p_reg->CR2, CR2_ITBUFEN);
 
         if (is_start_condition_generated(bus))
         {
@@ -220,11 +231,11 @@ void i2c_handle_ev_irq(i2c_bus_t bus)
             clear_stopf(bus);
             g_handles[bus].p_cfg->interrupt_cb(I2C_INTERRUPT_EV_STOP);
         }
-        if (is_tx_data_reg_empty(bus) && is_buf_interrupt_enabled)
+        if (is_tx_data_reg_empty(bus) && b_is_buf_interrupt_enabled)
         {
             handle_txe_interrupt(bus);
         }
-        if (is_rx_data_reg_not_empty(bus) && is_buf_interrupt_enabled)
+        if (is_rx_data_reg_not_empty(bus) && b_is_buf_interrupt_enabled)
         {
             handle_rxne_interrupt(bus);
         }
@@ -251,7 +262,7 @@ void i2c_handle_err_irq(i2c_bus_t bus)
 
         if (utils_is_bit_set_u16(g_handles[bus].p_reg->SR1, SR1_AF))
         {
-            handle_err_interrupt(bus, I2C_INTERRUPT_ERR_AF, SR1_AF);
+            handle_acknowledge_failed_interrupt(bus);
         }
 
         /***********************Check for Overrun/underrun error************************************/
@@ -271,6 +282,11 @@ void i2c_handle_err_irq(i2c_bus_t bus)
 bool i2c_is_interrupt_rx_tx_done(i2c_bus_t bus)
 {
     return g_handles[bus].irq_mgr.state == I2C_STATE_READY;
+}
+
+void i2c_set_interrupts_enabled(i2c_bus_t bus, bool b_enabled)
+{
+    utils_set_bit_u16(&g_handles[bus].p_reg->CR2, CR2_ITBUFEN | CR2_ITEVTEN | CR2_ITERREN, b_enabled);
 }
 
 static inline void wait_until_rx_data_reg_not_empty(i2c_bus_t bus)
@@ -295,23 +311,25 @@ static inline void enable_err_interrupt(i2c_bus_t bus, bool b_enabled)
     utils_set_bit_u16(&g_handles[bus].p_reg->CR2, CR2_ITERREN, b_enabled);
 }
 
-static inline void enable_interrupts(i2c_bus_t bus, bool b_enabled)
-{
-    utils_set_bit_u16(&g_handles[bus].p_reg->CR2, CR2_ITBUFEN | CR2_ITEVTEN | CR2_ITERREN, b_enabled);
-}
-
 static inline void handle_err_interrupt(i2c_bus_t bus, i2c_interrupt_t it, uint16_t mask)
 {
     /* Clears interrupt flag */
     utils_set_bit_u16(&g_handles[bus].p_reg->SR1, mask, false);
 
-    close_operation_data(bus, OPERATION_WRITE);
-    generate_stop_condition(bus);
-
     if (NULL != g_handles[bus].p_cfg->interrupt_cb)
     {
         g_handles[bus].p_cfg->interrupt_cb(it);
     }
+}
+
+static void handle_acknowledge_failed_interrupt(i2c_bus_t bus)
+{
+    if (is_master(bus))
+    {
+        close_operation_data(bus, OPERATION_WRITE);
+        generate_stop_condition(bus);
+    }
+    handle_err_interrupt(bus, I2C_INTERRUPT_ERR_AF, SR1_AF);
 }
 
 static inline bool is_err_interrupt_enabled(i2c_bus_t bus)
@@ -395,11 +413,11 @@ static inline void execute_address_phase(i2c_bus_t bus, uint8_t slave_address, o
     switch (operation)
     {
     case OPERATION_READ:
-        g_handles[bus].p_reg->DR = (uint16_t)((slave_address << 1u) | 1u);
+        g_handles[bus].p_reg->DR = (uint8_t)((slave_address << 1u) | 1u);
         break;
 
     case OPERATION_WRITE:
-        g_handles[bus].p_reg->DR = (uint16_t)((slave_address << 1u) & (uint8_t)(~1u));
+        g_handles[bus].p_reg->DR = (uint8_t)((slave_address << 1u) & (uint8_t)(~1u));
         break;
 
     default:
@@ -509,7 +527,6 @@ static inline bool is_msg_done(i2c_bus_t bus)
 
 static inline void close_operation_data(i2c_bus_t bus, operation_t operation)
 {
-
     enable_buffer_interrupt(bus, false);
     enable_event_interrupt(bus, false);
     g_handles[bus].irq_mgr.state = I2C_STATE_READY;
@@ -539,7 +556,7 @@ static inline void handle_txe_interrupt(i2c_bus_t bus)
     }
     else if (is_transmitter(bus))
     {
-        g_handles[bus].p_cfg->interrupt_cb(I2C_INTERRUPT_EV_DATA_REQ);
+        g_handles[bus].p_cfg->interrupt_cb(I2C_INTERRUPT_EV_SLAVE_TXE);
     }
     else
     {
@@ -557,7 +574,7 @@ static inline void handle_rxne_interrupt(i2c_bus_t bus)
     }
     else if (!is_transmitter(bus))
     {
-        g_handles[bus].p_cfg->interrupt_cb(I2C_INTERRUPT_EV_DATA_RCV);
+        g_handles[bus].p_cfg->interrupt_cb(I2C_INTERRUPT_EV_SLAVE_RXNE);
     }
     else
     {
@@ -676,6 +693,6 @@ static void setup_operation_with_interrupts(i2c_bus_t bus, i2c_msg_t *p_msg, ope
         g_handles[bus].irq_mgr.p_msg = p_msg;
         g_handles[bus].irq_mgr.state = (OPERATION_WRITE == operation) ? I2C_STATE_BUSY_IN_TX : I2C_STATE_BUSY_IN_RX;
         generate_start_condition(bus);
-        enable_interrupts(bus, true);
+        i2c_set_interrupts_enabled(bus, true);
     }
 }
