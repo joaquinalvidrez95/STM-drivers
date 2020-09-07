@@ -29,8 +29,9 @@
 #define MAIN_011_I2C_MASTER_RX (8)
 #define MAIN_012_I2C_MASTER_RX_IT (9)
 #define MAIN_013_I2C_SLAVE_TX (10)
+#define MAIN_014_I2C_SLAVE_TX_LEN (11)
 
-#define MAIN MAIN_013_I2C_SLAVE_TX
+#define MAIN MAIN_014_I2C_SLAVE_TX_LEN
 
 extern void initialise_monitor_handles();
 
@@ -630,7 +631,7 @@ static void interrupt_callback(i2c_interrupt_t source)
 static void init(void);
 static void interrupt_callback(i2c_interrupt_t source);
 
-static const volatile char *tx_buffer = "Hello man...";
+static const volatile char *g_tx_buffer = "Hello man...";
 
 int main()
 {
@@ -671,11 +672,11 @@ static void interrupt_callback(i2c_interrupt_t source)
         switch (command)
         {
         case ARDUINO_I2C_COMMAND_READ_LENGTH:
-            i2c_transmit_as_slave(NUCLEO_I2C_BUS, strlen(tx_buffer));
+            i2c_transmit_as_slave(NUCLEO_I2C_BUS, strlen(g_tx_buffer));
             break;
 
         case ARDUINO_I2C_COMMAND_READ_MSG:
-            i2c_transmit_as_slave(NUCLEO_I2C_BUS, tx_buffer[tx_buf_idx]);
+            i2c_transmit_as_slave(NUCLEO_I2C_BUS, g_tx_buffer[tx_buf_idx]);
             tx_buf_idx++;
             break;
 
@@ -695,6 +696,118 @@ static void interrupt_callback(i2c_interrupt_t source)
         break;
 
     case I2C_INTERRUPT_EV_STOP:
+        break;
+
+    default:
+        break;
+    }
+}
+
+#elif MAIN == MAIN_014_I2C_SLAVE_TX_LEN
+
+#define NUM_BYTES_MSG_LENGTH (4u)
+
+typedef struct
+{
+    volatile uint8_t command;
+    volatile size_t tx_buf_idx;
+    volatile uint8_t length_idx;
+} slave_manager_t;
+
+typedef struct
+{
+    const volatile char *const buffer;
+    volatile uint32_t length;
+} slave_message_t;
+
+static void init(void);
+static void interrupt_callback(i2c_interrupt_t source);
+
+static slave_message_t g_msg = {
+    .buffer = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vivamus tortor justo, accumsan quis suscipit ac, suscipit nec felis. Curabitur nisl risus, finibus sit amet nisi at, vulputate imperdiet ante.\n Aenean maximus nunc sit amet ligula ultrices sodales. Proin sit amet tempus urna. Maecenas nibh sed.",
+    .length = 0u,
+};
+
+int main()
+{
+    init();
+    for (;;)
+    {
+    }
+}
+
+static void init(void)
+{
+    initialise_monitor_handles();
+    g_msg.length = strlen(g_msg.buffer);
+    nucleo_init_button();
+    i2c_set_irq_enabled(NUCLEO_I2C_BUS, I2C_IRQ_EV, true);
+    i2c_set_irq_enabled(NUCLEO_I2C_BUS, I2C_IRQ_ERR, true);
+    nucleo_init_i2c(interrupt_callback);
+    i2c_set_interrupts_enabled(NUCLEO_I2C_BUS, true);
+}
+
+void I2C1_EV_IRQHandler(void)
+{
+    i2c_handle_ev_irq(NUCLEO_I2C_BUS);
+}
+
+void I2C1_ER_IRQHandler(void)
+{
+    i2c_handle_err_irq(NUCLEO_I2C_BUS);
+}
+
+static void interrupt_callback(i2c_interrupt_t source)
+{
+    static slave_manager_t slave_mgr = {
+        .command = 0u,
+        .tx_buf_idx = 0u,
+        .length_idx = 0u,
+    };
+
+    switch (source)
+    {
+    case I2C_INTERRUPT_EV_SLAVE_TXE:
+        switch (slave_mgr.command)
+        {
+        case ARDUINO_I2C_COMMAND_READ_LENGTH:
+        {
+            const uint8_t length = (g_msg.length >> ((slave_mgr.length_idx % NUM_BYTES_MSG_LENGTH) * 8u)) & 0xFFu;
+            i2c_transmit_as_slave(NUCLEO_I2C_BUS, length);
+            slave_mgr.length_idx++;
+            break;
+        }
+
+        case ARDUINO_I2C_COMMAND_READ_MSG:
+            i2c_transmit_as_slave(NUCLEO_I2C_BUS, g_msg.buffer[slave_mgr.tx_buf_idx]);
+            slave_mgr.tx_buf_idx++;
+            break;
+
+        default:
+            break;
+        }
+
+        break;
+
+    case I2C_INTERRUPT_EV_SLAVE_RXNE:
+        slave_mgr.command = i2c_receive_as_slave(NUCLEO_I2C_BUS);
+        break;
+
+    case I2C_INTERRUPT_ERR_AF:
+        if ((uint8_t)ARDUINO_I2C_COMMAND_READ_MSG != slave_mgr.command)
+        {
+            slave_mgr.command = 0u;
+        }
+        slave_mgr.length_idx = 0u;
+        if (slave_mgr.tx_buf_idx >= g_msg.length)
+        {
+            slave_mgr.tx_buf_idx = 0u;
+            slave_mgr.command = 0u;
+        }
+        break;
+
+    case I2C_INTERRUPT_EV_STOP:
+        slave_mgr.length_idx = 0u;
         break;
 
     default:
