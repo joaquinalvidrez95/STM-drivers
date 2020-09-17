@@ -35,11 +35,11 @@
 
 #define SRAM SRAM1_BASEADDR
 
-#define PERIPH_BASE 0x40000000LU
+#define PERIPH_BASE (0x40000000LU)
 #define APB1PERIPH_BASE PERIPH_BASE
-#define APB2PERIPH_BASE 0x40010000LU
-#define AHB1PERIPH_BASE 0x40020000LU
-#define AHB2PERIPH_BASE 0x50000000LU
+#define APB2PERIPH_BASE (0x40010000LU)
+#define AHB1PERIPH_BASE (0x40020000LU)
+#define AHB2PERIPH_BASE (0x50000000LU)
 
 /** AHB1 */
 #define GPIOA_BASEADDR (AHB1PERIPH_BASE + 0x0000u)
@@ -209,7 +209,7 @@ typedef struct
 	volatile uint32_t FTSR;
 	volatile uint32_t SWIER;
 	volatile uint32_t PR;
-} Exti_reg_t;
+} exti_reg_t;
 
 typedef struct
 {
@@ -232,7 +232,7 @@ typedef struct
 #define GPIOH ((gpio_reg_t *const)GPIOH_BASEADDR)
 
 #define RCC ((rcc_reg_t *)RCC_BASEADDR)
-#define EXTI ((Exti_reg_t *)EXTI_BASEADDR)
+#define EXTI ((exti_reg_t *)EXTI_BASEADDR)
 #define SYSCFG ((Syscfg_reg_t *)SYSCFG_BASEADDR)
 #define SYSCFG ((Syscfg_reg_t *)SYSCFG_BASEADDR)
 
@@ -297,13 +297,6 @@ typedef enum
 	Gpio_reset_port_g,
 	Gpio_reset_port_h,
 } gpio_reset_t;
-
-typedef enum
-{
-	I2C_RESET_1 = 1u << 21u,
-	I2C_RESET_2 = 1u << 22u,
-	I2C_RESET_3 = 1u << 23u,
-} i2c_reset_e;
 
 #define GPIOX_REG_RESET(port)                \
 	do                                       \
