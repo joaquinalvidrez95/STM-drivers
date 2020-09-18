@@ -10,6 +10,7 @@
 #include <stdint.h>
 
 #include "stm32f446xx.h"
+#include "utils.h"
 
 #define MIN_AHB_PRESCALER (8u)
 #define MIN_APB1_PRESCALER (4u)
@@ -23,6 +24,12 @@ typedef enum
     RCC_SWS_PLL_R = 3u,
 } rcc_sws_t;
 
+typedef enum
+{
+    APBENR_1 = 0,
+    APBENR_2 = 1,
+} apbenr_t;
+
 static inline uint8_t get_apb_low_speed_prescaler(void);
 static inline uint16_t get_ahb_prescaler(void);
 static inline uint32_t get_system_clock(void);
@@ -34,20 +41,32 @@ uint32_t rcc_get_pclk1(void)
 
 void rcc_set_i2c_peripheral_clock_enabled(i2c_bus_t bus, bool b_enabled)
 {
-    const uint32_t bit_positions[I2C_BUS_TOTAL] = {
-        [I2C_BUS_1] = 1u << 21u,
-        [I2C_BUS_2] = 1u << 22u,
-        [I2C_BUS_3] = 1u << 23u,
+    const uint8_t bit_positions[I2C_BUS_TOTAL] = {
+        [I2C_BUS_1] = 21u,
+        [I2C_BUS_2] = 22u,
+        [I2C_BUS_3] = 23u,
+    };
+  utils_set_bit_u32(&RCC->APBENR[APBENR_1], bit_positions[bus], b_enabled);
+}
+
+void rcc_set_usart_peripheral_clock_enabled(usart_bus_t bus, bool b_enabled)
+{
+    typedef struct
+    {
+        uint8_t bit_position;
+        apbenr_t apbenr_idx;
+    } helper_t;
+
+    const helper_t helpers[NUM_USART_BUSES] = {
+        [USART_BUS_1] = {.bit_position = 4u, .apbenr_idx = APBENR_2},
+        [USART_BUS_2] = {.bit_position = 4u, .apbenr_idx = APBENR_1},
+        [USART_BUS_3] = {.bit_position = 4u, .apbenr_idx = APBENR_1},
+        [UART_BUS_4] = {.bit_position = 4u, .apbenr_idx = APBENR_1},
+        [UART_BUS_5] = {.bit_position = 4u, .apbenr_idx = APBENR_1},
+        [USART_BUS_6] = {.bit_position = 5u, .apbenr_idx = APBENR_2},
     };
 
-    if (b_enabled)
-    {
-        RCC->APBENR[0] |= bit_positions[bus];
-    }
-    else
-    {
-        RCC->APBENR[0] &= ~bit_positions[bus];
-    }
+    utils_set_bit_u32(&RCC->APBENR[helpers[bus].apbenr_idx], helpers[bus].bit_position, b_enabled);
 }
 
 static inline uint32_t get_system_clock(void)

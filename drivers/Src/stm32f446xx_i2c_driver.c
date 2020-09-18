@@ -182,7 +182,7 @@ void i2c_set_irq_enabled(i2c_bus_t bus, i2c_irq_t irq, bool b_enabled)
 
 void i2c_set_peripheral_enabled(i2c_bus_t bus, bool b_enabled)
 {
-    utils_set_bit_u16(&g_handles[bus].p_reg->CR1, CR1_PE, b_enabled);
+    utils_set_bits_u16(&g_handles[bus].p_reg->CR1, CR1_PE, b_enabled);
 }
 
 void i2c_deinit(i2c_bus_t bus)
@@ -193,7 +193,7 @@ void i2c_deinit(i2c_bus_t bus)
 
 void i2c_set_ack(i2c_bus_t bus, i2c_ack_control_t ack)
 {
-    utils_set_bit_u16(&g_handles[bus].p_reg->CR1, CR1_ACK, I2C_ACK_CONTROL_ENABLED == ack);
+    utils_set_bits_u16(&g_handles[bus].p_reg->CR1, CR1_ACK, I2C_ACK_CONTROL_ENABLED == ack);
 }
 
 void i2c_handle_ev_irq(i2c_bus_t bus)
@@ -274,7 +274,7 @@ bool i2c_is_interrupt_rx_tx_done(i2c_bus_t bus)
 
 void i2c_set_interrupts_enabled(i2c_bus_t bus, bool b_enabled)
 {
-    utils_set_bit_u16(&g_handles[bus].p_reg->CR2, CR2_ITBUFEN | CR2_ITEVTEN | CR2_ITERREN, b_enabled);
+    utils_set_bits_u16(&g_handles[bus].p_reg->CR2, CR2_ITBUFEN | CR2_ITEVTEN | CR2_ITERREN, b_enabled);
 }
 
 static inline void wait_until_rx_data_reg_not_empty(i2c_bus_t bus)
@@ -286,23 +286,23 @@ static inline void wait_until_rx_data_reg_not_empty(i2c_bus_t bus)
 
 static inline void enable_buffer_interrupt(i2c_bus_t bus, bool b_enabled)
 {
-    utils_set_bit_u16(&g_handles[bus].p_reg->CR2, CR2_ITBUFEN, b_enabled);
+    utils_set_bits_u16(&g_handles[bus].p_reg->CR2, CR2_ITBUFEN, b_enabled);
 }
 
 static inline void enable_event_interrupt(i2c_bus_t bus, bool b_enabled)
 {
-    utils_set_bit_u16(&g_handles[bus].p_reg->CR2, CR2_ITEVTEN, b_enabled);
+    utils_set_bits_u16(&g_handles[bus].p_reg->CR2, CR2_ITEVTEN, b_enabled);
 }
 
 static inline void enable_err_interrupt(i2c_bus_t bus, bool b_enabled)
 {
-    utils_set_bit_u16(&g_handles[bus].p_reg->CR2, CR2_ITERREN, b_enabled);
+    utils_set_bits_u16(&g_handles[bus].p_reg->CR2, CR2_ITERREN, b_enabled);
 }
 
 static inline void handle_err_interrupt(i2c_bus_t bus, i2c_interrupt_t it, uint16_t mask)
 {
     /* Clears interrupt flag */
-    utils_set_bit_u16(&g_handles[bus].p_reg->SR1, mask, false);
+    utils_set_bits_u16(&g_handles[bus].p_reg->SR1, mask, false);
 
     if (NULL != g_handles[bus].p_cfg->interrupt_cb)
     {
@@ -349,6 +349,7 @@ static inline void handle_start_condition_interrupt(i2c_bus_t bus)
 
 static inline void reset_reg(uint32_t bit)
 {
+    /* TODO: Move to RCC */
     RCC->APB_RSTR[0] |= bit;
     RCC->APB_RSTR[0] &= ~bit;
 }
@@ -374,7 +375,7 @@ static inline uint16_t calculate_ccr(const i2c_cfg_t *p_cfg, uint32_t pclk1)
 
 static inline void generate_start_condition(i2c_bus_t bus)
 {
-    utils_set_bit_u16(&g_handles[bus].p_reg->CR1, CR1_START, true);
+    utils_set_bits_u16(&g_handles[bus].p_reg->CR1, CR1_START, true);
 }
 
 static inline void generate_blocking_start_condition(i2c_bus_t bus)
@@ -388,7 +389,7 @@ static inline void generate_blocking_start_condition(i2c_bus_t bus)
 
 static inline void generate_stop_condition(i2c_bus_t bus)
 {
-    utils_set_bit_u16(&g_handles[bus].p_reg->CR1, CR1_STOP, true);
+    utils_set_bits_u16(&g_handles[bus].p_reg->CR1, CR1_STOP, true);
 }
 
 static inline bool is_start_condition_generated(i2c_bus_t bus)

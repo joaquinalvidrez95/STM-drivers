@@ -245,6 +245,7 @@ typedef struct
 #define I2C2 ((volatile i2c_reg_t *)I2C2_BASEADDR)
 #define I2C3 ((volatile i2c_reg_t *)I2C3_BASEADDR)
 
+/* TODO: Move to RCC module */
 /** Enables GPIOx */
 #define GPIOA_PCLCK_EN() (RCC->AHBENR[0] |= (1u << 0u))
 #define GPIOB_PCLCK_EN() (RCC->AHBENR[0] |= (1u << 1u))
