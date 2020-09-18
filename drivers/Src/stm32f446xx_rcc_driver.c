@@ -26,9 +26,24 @@ typedef enum
 
 typedef enum
 {
-    APBENR_1 = 0,
-    APBENR_2 = 1,
-} apbenr_t;
+    APB_1 = 0,
+    APB_2 = 1,
+} apb_t;
+
+typedef struct
+{
+    uint8_t bit_position;
+    apb_t apb_idx;
+} helper_t;
+
+static const helper_t g_usart_helpers[NUM_USART_BUSES] = {
+    [USART_BUS_1] = {.bit_position = 4u, .apb_idx = APB_2},
+    [USART_BUS_2] = {.bit_position = 17u, .apb_idx = APB_1},
+    [USART_BUS_3] = {.bit_position = 18u, .apb_idx = APB_1},
+    [UART_BUS_4] = {.bit_position = 19u, .apb_idx = APB_1},
+    [UART_BUS_5] = {.bit_position = 20u, .apb_idx = APB_1},
+    [USART_BUS_6] = {.bit_position = 5u, .apb_idx = APB_2},
+};
 
 static inline uint8_t get_apb_low_speed_prescaler(void);
 static inline uint16_t get_ahb_prescaler(void);
@@ -46,27 +61,18 @@ void rcc_set_i2c_peripheral_clock_enabled(i2c_bus_t bus, bool b_enabled)
         [I2C_BUS_2] = 22u,
         [I2C_BUS_3] = 23u,
     };
-  utils_set_bit_u32(&RCC->APBENR[APBENR_1], bit_positions[bus], b_enabled);
+    utils_set_bit_u32(&RCC->APBENR[APB_1], bit_positions[bus], b_enabled);
 }
 
 void rcc_set_usart_peripheral_clock_enabled(usart_bus_t bus, bool b_enabled)
 {
-    typedef struct
-    {
-        uint8_t bit_position;
-        apbenr_t apbenr_idx;
-    } helper_t;
+    utils_set_bit_u32(&RCC->APBENR[g_usart_helpers[bus].apb_idx], g_usart_helpers[bus].bit_position, b_enabled);
+}
 
-    const helper_t helpers[NUM_USART_BUSES] = {
-        [USART_BUS_1] = {.bit_position = 4u, .apbenr_idx = APBENR_2},
-        [USART_BUS_2] = {.bit_position = 4u, .apbenr_idx = APBENR_1},
-        [USART_BUS_3] = {.bit_position = 4u, .apbenr_idx = APBENR_1},
-        [UART_BUS_4] = {.bit_position = 4u, .apbenr_idx = APBENR_1},
-        [UART_BUS_5] = {.bit_position = 4u, .apbenr_idx = APBENR_1},
-        [USART_BUS_6] = {.bit_position = 5u, .apbenr_idx = APBENR_2},
-    };
-
-    utils_set_bit_u32(&RCC->APBENR[helpers[bus].apbenr_idx], helpers[bus].bit_position, b_enabled);
+void rcc_reset_usart(usart_bus_t bus)
+{
+    utils_set_bit_u32(&RCC->APB_RSTR[g_usart_helpers[bus].apb_idx], g_usart_helpers[bus].bit_position, true);
+    utils_set_bit_u32(&RCC->APB_RSTR[g_usart_helpers[bus].apb_idx], g_usart_helpers[bus].bit_position, false);
 }
 
 static inline uint32_t get_system_clock(void)

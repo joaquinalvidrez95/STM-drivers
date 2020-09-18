@@ -15,5 +15,6 @@
 uint32_t rcc_get_pclk1(void);
 void rcc_set_i2c_peripheral_clock_enabled(i2c_bus_t bus, bool b_enabled);
 void rcc_set_usart_peripheral_clock_enabled(usart_bus_t bus, bool b_enabled);
+void rcc_reset_usart(usart_bus_t bus);
 
 #endif /* INC_STM32F446XX_RCC_DRIVER_H_ */
