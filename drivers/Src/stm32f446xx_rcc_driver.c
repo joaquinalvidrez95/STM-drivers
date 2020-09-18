@@ -61,18 +61,18 @@ void rcc_set_i2c_peripheral_clock_enabled(i2c_bus_t bus, bool b_enabled)
         [I2C_BUS_2] = 22u,
         [I2C_BUS_3] = 23u,
     };
-    utils_set_bit_u32(&RCC->APBENR[APB_1], bit_positions[bus], b_enabled);
+    utils_set_bit_by_position_u32(&RCC->APBENR[APB_1], bit_positions[bus], b_enabled);
 }
 
 void rcc_set_usart_peripheral_clock_enabled(usart_bus_t bus, bool b_enabled)
 {
-    utils_set_bit_u32(&RCC->APBENR[g_usart_helpers[bus].apb_idx], g_usart_helpers[bus].bit_position, b_enabled);
+    utils_set_bit_by_position_u32(&RCC->APBENR[g_usart_helpers[bus].apb_idx], g_usart_helpers[bus].bit_position, b_enabled);
 }
 
 void rcc_reset_usart(usart_bus_t bus)
 {
-    utils_set_bit_u32(&RCC->APB_RSTR[g_usart_helpers[bus].apb_idx], g_usart_helpers[bus].bit_position, true);
-    utils_set_bit_u32(&RCC->APB_RSTR[g_usart_helpers[bus].apb_idx], g_usart_helpers[bus].bit_position, false);
+    utils_set_bit_by_position_u32(&RCC->APB_RSTR[g_usart_helpers[bus].apb_idx], g_usart_helpers[bus].bit_position, true);
+    utils_set_bit_by_position_u32(&RCC->APB_RSTR[g_usart_helpers[bus].apb_idx], g_usart_helpers[bus].bit_position, false);
 }
 
 static inline uint32_t get_system_clock(void)

@@ -36,7 +36,7 @@ inline void utils_set_bits_u16(volatile uint16_t *reg, uint16_t mask, bool b_set
     }
 }
 
-inline void utils_set_bit_u32(volatile uint32_t *reg, uint8_t bit_position, bool b_set)
+inline void utils_set_bit_by_position_u32(volatile uint32_t *reg, uint8_t bit_position, bool b_set)
 {
     if (b_set)
     {
@@ -45,6 +45,18 @@ inline void utils_set_bit_u32(volatile uint32_t *reg, uint8_t bit_position, bool
     else
     {
         *reg &= (uint32_t)(~(1u << bit_position));
+    }
+}
+
+inline void utils_set_bit_by_position_u16(volatile uint16_t *reg, uint8_t bit_position, bool b_set)
+{
+    if (b_set)
+    {
+        *reg |= (uint16_t)(1u << bit_position);
+    }
+    else
+    {
+        *reg &= (uint16_t)(~(1u << bit_position));
     }
 }
 
