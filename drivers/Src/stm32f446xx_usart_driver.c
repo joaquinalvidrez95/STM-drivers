@@ -94,24 +94,23 @@ static void set_parity(const usart_cfg_t *p_cfg)
 
 static void set_mode(const usart_cfg_t *p_cfg)
 {
+    bool b_tx_enabled = true;
+    bool b_rx_enabled = true;
+
     switch (p_cfg->mode)
     {
     case USART_MODE_TX:
-        utils_set_bit_by_position_u16(&gp_registers[p_cfg->bus]->CR1, CR1_TE, true);
-        utils_set_bit_by_position_u16(&gp_registers[p_cfg->bus]->CR1, CR1_RE, false);
+        b_rx_enabled = false;
         break;
 
     case USART_MODE_RX:
-        utils_set_bit_by_position_u16(&gp_registers[p_cfg->bus]->CR1, CR1_TE, false);
-        utils_set_bit_by_position_u16(&gp_registers[p_cfg->bus]->CR1, CR1_RE, true);
+        b_tx_enabled = false;
         break;
 
     case USART_MODE_TX_RX:
-        utils_set_bit_by_position_u16(&gp_registers[p_cfg->bus]->CR1, CR1_TE, true);
-        utils_set_bit_by_position_u16(&gp_registers[p_cfg->bus]->CR1, CR1_RE, true);
-        break;
-
     default:
         break;
     }
+    utils_set_bit_by_position_u16(&gp_registers[p_cfg->bus]->CR1, CR1_TE, b_tx_enabled);
+    utils_set_bit_by_position_u16(&gp_registers[p_cfg->bus]->CR1, CR1_RE, b_rx_enabled);
 }
