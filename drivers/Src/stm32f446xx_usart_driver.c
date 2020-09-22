@@ -26,6 +26,10 @@
 #define CR3_CTSE (9u)
 #define CR3_RTSE (8u)
 
+#define SR_TXE (7u)
+#define SR_TC (6u)
+#define SR_RXNE (5u)
+
 typedef struct
 {
     volatile uint16_t SR;
@@ -55,11 +59,15 @@ static reg_t *const gp_registers[NUM_USART_BUSES] = {
 
 static void set_parity(const usart_cfg_t *p_cfg);
 static void set_mode(const usart_cfg_t *p_cfg);
+static void transmit_with_polling(usart_bus_t bus, const usart_msg_t *p_msg);
+static inline bool is_tx_data_register_empty(usart_bus_t bus);
+static inline usart_word_length_t get_word_length(usart_bus_t bus);
+static inline bool is_tx_complete(usart_bus_t bus);
 
 void usart_init(const usart_cfg_t *p_cfg)
 {
     rcc_set_usart_peripheral_clock_enabled(p_cfg->bus, true);
-    utils_set_bit_by_position_u16(&gp_registers[p_cfg->bus]->CR1, CR1_M, p_cfg->word_length == USART_WORD_LENGTH_9_BITS);
+    utils_set_bit_by_position_u16(&gp_registers[p_cfg->bus]->CR1, CR1_M, USART_WORD_LENGTH_9_BITS == p_cfg->word_length);
     set_parity(p_cfg);
     set_mode(p_cfg);
 
@@ -76,6 +84,22 @@ void usart_set_peripheral_enabled(usart_bus_t bus, bool b_enabled)
     utils_set_bit_by_position_u16(&gp_registers[bus]->CR1, CR1_UE, true);
 }
 
+void usart_transmit(usart_handle_t *p_handle, usart_msg_t *p_msg, utils_mechanism_t mechanism)
+{
+    switch (mechanism)
+    {
+    case UTILS_MECHANISM_POLLING:
+        transmit_with_polling(p_handle->cfg.bus, p_msg);
+        break;
+
+    case UTILS_MECHANISM_INTERRUPT:
+        break;
+
+    default:
+        break;
+    }
+}
+
 static void set_parity(const usart_cfg_t *p_cfg)
 {
     switch (p_cfg->parity)
@@ -85,7 +109,7 @@ static void set_parity(const usart_cfg_t *p_cfg)
     case USART_PARITY_EVEN:
     case USART_PARITY_ODD:
         utils_set_bit_by_position_u16(&gp_registers[p_cfg->bus]->CR1, CR1_PCE, true);
-        utils_set_bit_by_position_u16(&gp_registers[p_cfg->bus]->CR1, CR1_PS, p_cfg->parity == USART_PARITY_ODD);
+        utils_set_bit_by_position_u16(&gp_registers[p_cfg->bus]->CR1, CR1_PS, USART_PARITY_ODD == p_cfg->parity);
         break;
     default:
         break;
@@ -113,4 +137,43 @@ static void set_mode(const usart_cfg_t *p_cfg)
     }
     utils_set_bit_by_position_u16(&gp_registers[p_cfg->bus]->CR1, CR1_TE, b_tx_enabled);
     utils_set_bit_by_position_u16(&gp_registers[p_cfg->bus]->CR1, CR1_RE, b_rx_enabled);
+}
+
+static void transmit_with_polling(usart_bus_t bus, const usart_msg_t *p_msg)
+{
+    for (size_t buf_idx = 0u; buf_idx < p_msg->size; buf_idx++)
+    {
+        while (!is_tx_data_register_empty(bus))
+        {
+        }
+
+        if (USART_WORD_LENGTH_9_BITS == get_word_length(bus))
+        {
+            /* TODO: Complete */
+            gp_registers[bus]->DR = p_msg->p_data[buf_idx];
+        }
+        else
+        {
+            gp_registers[bus]->DR = (uint16_t)p_msg->p_data[buf_idx];
+        }
+    }
+
+    while (!is_tx_complete(bus))
+    {
+    }
+}
+
+static inline bool is_tx_data_register_empty(usart_bus_t bus)
+{
+    return utils_is_bit_set_u16(gp_registers[bus]->SR, SR_TXE);
+}
+
+static inline usart_word_length_t get_word_length(usart_bus_t bus)
+{
+    return utils_is_bit_set_u16(gp_registers[bus]->CR1, CR1_M) ? USART_WORD_LENGTH_9_BITS : USART_WORD_LENGTH_8_BITS;
+}
+
+static inline bool is_tx_complete(usart_bus_t bus)
+{
+    return utils_is_bit_set_u16(gp_registers[bus]->SR, SR_TC);
 }

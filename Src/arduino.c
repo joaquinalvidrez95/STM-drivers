@@ -95,7 +95,7 @@ uint8_t arduino_i2c_get_length(i2c_bus_t bus, utils_mechanism_t mechanism)
                            &(i2c_msg_t){
                                .slave_address = ARDUINO_I2C_ADDRESS,
                                .size = sizeof(uint8_t),
-                               .buffer = &(uint8_t){ARDUINO_I2C_COMMAND_READ_LENGTH},
+                               .p_buffer = &(uint8_t){ARDUINO_I2C_COMMAND_READ_LENGTH},
                                .repeated_start = I2C_REPEATED_START_ENABLED,
                            },
                            mechanism);
@@ -108,7 +108,7 @@ uint8_t arduino_i2c_get_length(i2c_bus_t bus, utils_mechanism_t mechanism)
                           &(i2c_msg_t){
                               .slave_address = ARDUINO_I2C_ADDRESS,
                               .size = sizeof(length),
-                              .buffer = &length,
+                              .p_buffer = &length,
                               .repeated_start = I2C_REPEATED_START_ENABLED,
                           },
                           mechanism);

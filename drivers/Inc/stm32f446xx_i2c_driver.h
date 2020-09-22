@@ -87,7 +87,7 @@ typedef struct
  */
 typedef struct
 {
-    uint8_t *buffer;
+    uint8_t *p_buffer;
     size_t size;
     uint8_t slave_address;
     i2c_repeated_start_t repeated_start;

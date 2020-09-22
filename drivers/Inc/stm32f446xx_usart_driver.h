@@ -10,6 +10,9 @@
 
 #include <stdint.h>
 #include <stdbool.h>
+#include <stddef.h>
+
+#include "utils.h"
 
 typedef enum
 {
@@ -81,12 +84,18 @@ typedef struct
 typedef struct
 {
     const usart_cfg_t cfg;
-} usart_handler_t;
+} usart_handle_t;
+
+typedef struct
+{
+    uint8_t *const p_data;
+    const size_t size;
+} usart_msg_t;
 
 void usart_init(const usart_cfg_t *p_cfg);
 void usart_set_peripheral_enabled(usart_bus_t bus, bool b_enabled);
 
-void usart_transmit(usart_bus_t bus);
+void usart_transmit(usart_handle_t *p_handle, usart_msg_t *p_msg, utils_mechanism_t mechanism);
 void usart_receive(usart_bus_t bus);
 
 #endif /* INC_STM32F446XX_USART_DRIVER_H_ */

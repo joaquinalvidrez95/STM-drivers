@@ -473,7 +473,7 @@ int main()
 
         i2c_transmit_as_master(NUCLEO_I2C_BUS,
                                &(i2c_msg_t){
-                                   .buffer = (uint8_t *)&messages[msg_idx][0],
+                                   .p_buffer = (uint8_t *)&messages[msg_idx][0],
                                    .size = strlen(messages[msg_idx]),
                                    .slave_address = ARDUINO_I2C_ADDRESS,
                                    .repeated_start = I2C_ACK_CONTROL_DISABLED,
@@ -510,7 +510,7 @@ int main()
 
         i2c_transmit_as_master(NUCLEO_I2C_BUS,
                                &(i2c_msg_t){
-                                   .buffer = &(uint8_t){ARDUINO_I2C_COMMAND_READ_MSG},
+                                   .p_buffer = &(uint8_t){ARDUINO_I2C_COMMAND_READ_MSG},
                                    .size = sizeof(uint8_t),
                                    .slave_address = ARDUINO_I2C_ADDRESS,
                                    .repeated_start = I2C_ACK_CONTROL_DISABLED,
@@ -520,7 +520,7 @@ int main()
         i2c_receive_as_master(NUCLEO_I2C_BUS,
                               &(i2c_msg_t){
                                   .size = msg_length,
-                                  .buffer = &buffer[0],
+                                  .p_buffer = &buffer[0],
                                   .slave_address = ARDUINO_I2C_ADDRESS,
                                   .repeated_start = I2C_ACK_CONTROL_DISABLED,
                               },
@@ -558,7 +558,7 @@ int main()
 
         i2c_transmit_as_master(NUCLEO_I2C_BUS,
                                &(i2c_msg_t){
-                                   .buffer = &(uint8_t){ARDUINO_I2C_COMMAND_READ_MSG},
+                                   .p_buffer = &(uint8_t){ARDUINO_I2C_COMMAND_READ_MSG},
                                    .size = sizeof(uint8_t),
                                    .slave_address = ARDUINO_I2C_ADDRESS,
                                    .repeated_start = I2C_ACK_CONTROL_ENABLED,
@@ -572,7 +572,7 @@ int main()
         i2c_receive_as_master(NUCLEO_I2C_BUS,
                               &(i2c_msg_t){
                                   .size = msg_length,
-                                  .buffer = &buffer[0],
+                                  .p_buffer = &buffer[0],
                                   .slave_address = ARDUINO_I2C_ADDRESS,
                                   .repeated_start = I2C_ACK_CONTROL_DISABLED,
                               },
@@ -716,7 +716,7 @@ typedef struct
 
 typedef struct
 {
-    const volatile char *const buffer;
+    const volatile char *const p_buffer;
     volatile uint32_t length;
 } slave_message_t;
 
@@ -724,7 +724,7 @@ static void init(void);
 static void interrupt_callback(i2c_interrupt_t source);
 
 static slave_message_t g_msg = {
-    .buffer = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vivamus tortor justo, accumsan quis suscipit ac, suscipit nec felis. Curabitur nisl risus, finibus sit amet nisi at, vulputate imperdiet ante.\n Aenean maximus nunc sit amet ligula ultrices sodales. Proin sit amet tempus urna. Maecenas nibh sed.",
+    .p_buffer = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vivamus tortor justo, accumsan quis suscipit ac, suscipit nec felis. Curabitur nisl risus, finibus sit amet nisi at, vulputate imperdiet ante.\n Aenean maximus nunc sit amet ligula ultrices sodales. Proin sit amet tempus urna. Maecenas nibh sed.",
     .length = 0u,
 };
 
@@ -739,7 +739,7 @@ int main()
 static void init(void)
 {
     initialise_monitor_handles();
-    g_msg.length = strlen(g_msg.buffer);
+    g_msg.length = strlen(g_msg.p_buffer);
     nucleo_init_button();
     i2c_set_irq_enabled(NUCLEO_I2C_BUS, I2C_IRQ_EV, true);
     i2c_set_irq_enabled(NUCLEO_I2C_BUS, I2C_IRQ_ERR, true);
@@ -779,7 +779,7 @@ static void interrupt_callback(i2c_interrupt_t source)
         }
 
         case ARDUINO_I2C_COMMAND_READ_MSG:
-            i2c_transmit_as_slave(NUCLEO_I2C_BUS, g_msg.buffer[slave_mgr.tx_buf_idx]);
+            i2c_transmit_as_slave(NUCLEO_I2C_BUS, g_msg.p_buffer[slave_mgr.tx_buf_idx]);
             slave_mgr.tx_buf_idx++;
             break;
 
