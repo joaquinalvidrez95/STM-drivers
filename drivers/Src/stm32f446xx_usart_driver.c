@@ -13,6 +13,7 @@
 #include "stm32f446xx.h"
 #include "stm32f446xx_rcc_driver.h"
 #include "utils.h"
+#include "communication.h"
 
 #define CR1_UE (13u)
 #define CR1_M (12u)
@@ -66,6 +67,7 @@ static inline bool is_rx_data_register_not_empty(usart_bus_t bus);
 static inline usart_word_length_t get_word_length(usart_bus_t bus);
 static inline bool is_parity_enabled(usart_bus_t bus);
 static inline bool is_tx_complete(usart_bus_t bus);
+static void setup_interrupt(usart_handle_t *p_handle, usart_msg_t *p_msg, communication_t communication);
 
 void usart_init(const usart_cfg_t *p_cfg)
 {
@@ -96,6 +98,7 @@ void usart_transmit(usart_handle_t *p_handle, usart_msg_t *p_msg, utils_mechanis
         break;
 
     case UTILS_MECHANISM_INTERRUPT:
+        setup_interrupt(p_handle, p_msg, COMMUNICATION_TX);
         break;
 
     default:
@@ -112,6 +115,7 @@ void usart_receive(usart_handle_t *p_handle, usart_msg_t *p_msg, utils_mechanism
         break;
 
     case UTILS_MECHANISM_INTERRUPT:
+        setup_interrupt(p_handle, p_msg, COMMUNICATION_RX);
         break;
 
     default:
@@ -240,4 +244,13 @@ static inline bool is_rx_data_register_not_empty(usart_bus_t bus)
 static inline bool is_parity_enabled(usart_bus_t bus)
 {
     return utils_is_bit_set_u16(gp_registers[bus]->CR1, CR1_PCE);
+}
+
+static void setup_interrupt(usart_handle_t *p_handle, usart_msg_t *p_msg, communication_t communication)
+{
+    if (USART_IRQ_MGR_STATE_READY == p_handle->irq_mgr.state)
+    {
+        p_handle->irq_mgr.p_msg = p_msg;
+        p_handle->irq_mgr.state = COMMUNICATION_RX == communication ? USART_IRQ_MGR_STATE_BUSY_IN_RX : USART_IRQ_MGR_STATE_BUSY_IN_TX;
+    }
 }

@@ -87,9 +87,18 @@ typedef struct
     const size_t size;
 } usart_msg_t;
 
+typedef enum
+{
+    USART_IRQ_MGR_STATE_READY,
+    USART_IRQ_MGR_STATE_BUSY_IN_RX,
+    USART_IRQ_MGR_STATE_BUSY_IN_TX,
+} usart_irq_mgr_state_t;
+
 typedef struct
 {
-    usart_msg_t *p_msg;
+    volatile usart_msg_t *p_msg;
+    volatile usart_irq_mgr_state_t state;
+    volatile size_t mgs_idx;
 } usart_irq_mgr_t;
 
 typedef struct
