@@ -60,8 +60,11 @@ static reg_t *const gp_registers[NUM_USART_BUSES] = {
 static void set_parity(const usart_cfg_t *p_cfg);
 static void set_mode(const usart_cfg_t *p_cfg);
 static void transmit_with_polling(usart_bus_t bus, const usart_msg_t *p_msg);
+static void receive_with_polling(usart_bus_t bus, const usart_msg_t *p_msg);
 static inline bool is_tx_data_register_empty(usart_bus_t bus);
+static inline bool is_rx_data_register_not_empty(usart_bus_t bus);
 static inline usart_word_length_t get_word_length(usart_bus_t bus);
+static inline bool is_parity_enabled(usart_bus_t bus);
 static inline bool is_tx_complete(usart_bus_t bus);
 
 void usart_init(const usart_cfg_t *p_cfg)
@@ -90,6 +93,22 @@ void usart_transmit(usart_handle_t *p_handle, usart_msg_t *p_msg, utils_mechanis
     {
     case UTILS_MECHANISM_POLLING:
         transmit_with_polling(p_handle->cfg.bus, p_msg);
+        break;
+
+    case UTILS_MECHANISM_INTERRUPT:
+        break;
+
+    default:
+        break;
+    }
+}
+
+void usart_receive(usart_handle_t *p_handle, usart_msg_t *p_msg, utils_mechanism_t mechanism)
+{
+    switch (mechanism)
+    {
+    case UTILS_MECHANISM_POLLING:
+        receive_with_polling(p_handle->cfg.bus, p_msg);
         break;
 
     case UTILS_MECHANISM_INTERRUPT:
@@ -149,12 +168,12 @@ static void transmit_with_polling(usart_bus_t bus, const usart_msg_t *p_msg)
 
         if (USART_WORD_LENGTH_9_BITS == get_word_length(bus))
         {
-            /* TODO: Complete */
-            gp_registers[bus]->DR = p_msg->p_data[buf_idx];
+            /* TODO: Check if correct */
+            gp_registers[bus]->DR = (uint16_t)(p_msg->p_buffer[buf_idx]) | ((uint16_t)(p_msg->p_buffer[buf_idx + 1u] & 1u) << 8u);
         }
         else
         {
-            gp_registers[bus]->DR = (uint16_t)p_msg->p_data[buf_idx];
+            gp_registers[bus]->DR = (uint16_t)p_msg->p_buffer[buf_idx];
         }
     }
 
@@ -176,4 +195,49 @@ static inline usart_word_length_t get_word_length(usart_bus_t bus)
 static inline bool is_tx_complete(usart_bus_t bus)
 {
     return utils_is_bit_set_u16(gp_registers[bus]->SR, SR_TC);
+}
+
+static void receive_with_polling(usart_bus_t bus, const usart_msg_t *p_msg)
+{
+    for (size_t buf_idx = 0u; buf_idx < p_msg->size; buf_idx++)
+    {
+        while (!is_rx_data_register_not_empty(bus))
+        {
+        }
+
+        if (USART_WORD_LENGTH_9_BITS == get_word_length(bus))
+        {
+            if (is_parity_enabled(bus))
+            {
+                p_msg->p_buffer[buf_idx] = (uint8_t)(gp_registers[bus]->DR & 0xFFu);
+            }
+            else
+            {
+                /* TODO: Possible bug. Refactor */
+                p_msg->p_buffer[buf_idx] = (uint8_t)(gp_registers[bus]->DR & 0xFFu);
+                p_msg->p_buffer[buf_idx + 1u] = (uint8_t)((gp_registers[bus]->DR >> 8u) & 1u);
+            }
+        }
+        else
+        {
+            if (is_parity_enabled(bus))
+            {
+                p_msg->p_buffer[buf_idx] = (uint8_t)(gp_registers[bus]->DR & 0x7Fu);
+            }
+            else
+            {
+                p_msg->p_buffer[buf_idx] = (uint8_t)gp_registers[bus]->DR;
+            }
+        }
+    }
+}
+
+static inline bool is_rx_data_register_not_empty(usart_bus_t bus)
+{
+    return utils_is_bit_set_u16(gp_registers[bus]->SR, SR_RXNE);
+}
+
+static inline bool is_parity_enabled(usart_bus_t bus)
+{
+    return utils_is_bit_set_u16(gp_registers[bus]->CR1, CR1_PCE);
 }
