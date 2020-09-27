@@ -103,7 +103,7 @@ typedef struct
 
 typedef struct
 {
-    const usart_cfg_t cfg;
+    usart_cfg_t cfg;
     usart_irq_mgr_t irq_mgr;
 } usart_handle_t;
 

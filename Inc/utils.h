@@ -29,7 +29,24 @@ inline bool utils_is_bit_set_u16(uint16_t reg, uint16_t bit_position)
     return (reg & (1u << bit_position)) != 0u;
 }
 
+inline bool utils_is_bit_set_u32(uint32_t reg, uint32_t bit_position)
+{
+    return (reg & (1u << bit_position)) != 0u;
+}
+
 inline void utils_set_bits_u16(volatile uint16_t *reg, uint16_t mask, bool b_set)
+{
+    if (b_set)
+    {
+        *reg |= mask;
+    }
+    else
+    {
+        *reg &= ~mask;
+    }
+}
+
+inline void utils_set_bits_u32(volatile uint32_t *reg, uint32_t mask, bool b_set)
 {
     if (b_set)
     {

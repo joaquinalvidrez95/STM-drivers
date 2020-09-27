@@ -18,6 +18,8 @@ void utils_delay()
 
 bool utils_are_bits_set_u16(uint16_t reg, uint16_t mask);
 bool utils_is_bit_set_u16(uint16_t reg, uint16_t bit_position);
+bool utils_is_bit_set_u32(uint32_t reg, uint32_t bit_position);
 void utils_set_bits_u16(volatile uint16_t *reg, uint16_t mask, bool b_set);
+void utils_set_bits_u32(volatile uint32_t *reg, uint32_t mask, bool b_set);
 void utils_set_bit_by_position_u32(volatile uint32_t *reg, uint8_t bit_position, bool b_set);
 void utils_set_bit_by_position_u16(volatile uint16_t *reg, uint8_t bit_position, bool b_set);

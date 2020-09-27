@@ -10,10 +10,12 @@
  */
 #include <string.h>
 #include <stdio.h>
+
 #include "stm32f446xx.h"
 #include "stm32f446xx_gpio_driver.h"
 #include "stm32f446xx_spi_driver.h"
 #include "stm32f446xx_i2c_driver.h"
+#include "stm32f446xx_usart_driver.h"
 #include "arduino.h"
 #include "utils.h"
 #include "nucleo.h"
@@ -30,8 +32,9 @@
 #define MAIN_012_I2C_MASTER_RX_IT (9)
 #define MAIN_013_I2C_SLAVE_TX (10)
 #define MAIN_014_I2C_SLAVE_TX_LEN (11)
+#define MAIN_015_USART_TX (12)
 
-#define MAIN MAIN_014_I2C_SLAVE_TX_LEN
+#define MAIN MAIN_015_USART_TX
 
 extern void initialise_monitor_handles();
 
@@ -813,6 +816,37 @@ static void interrupt_callback(i2c_interrupt_t source)
     default:
         break;
     }
+}
+
+#elif MAIN == MAIN_015_USART_TX
+
+static usart_handle_t g_handle = {0u};
+
+static void init(void);
+
+int main()
+{
+    init();
+
+    uint8_t msg[] = "hello man\n";
+
+    for (;;)
+    {
+        wait_till_button_pressed();
+
+        usart_transmit(&g_handle,
+                       &(usart_msg_t){
+                           .p_buffer = &msg[0],
+                           .size = strlen(&msg[0]),
+                       },
+                       UTILS_MECHANISM_POLLING);
+    }
+}
+
+static void init(void)
+{
+    nucleo_init_button();
+    nucleo_init_usart(&g_handle.cfg);
 }
 
 #endif

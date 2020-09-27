@@ -38,20 +38,13 @@
 
 typedef struct
 {
-    volatile uint16_t SR;
-    uint16_t _reserved_0;
-    volatile uint16_t DR;
-    uint16_t _reserved_1;
-    volatile uint16_t BRR;
-    uint16_t _reserved_2;
-    volatile uint16_t CR1;
-    uint16_t _reserved_3;
-    volatile uint16_t CR2;
-    uint16_t _reserved_4;
-    volatile uint16_t CR3;
-    uint16_t _reserved_5;
-    volatile uint16_t GTPR;
-    uint16_t _reserved_6;
+    volatile uint32_t SR;
+    volatile uint32_t DR;
+    volatile uint32_t BRR;
+    volatile uint32_t CR1;
+    volatile uint32_t CR2;
+    volatile uint32_t CR3;
+    volatile uint32_t GTPR;
 } reg_t;
 
 typedef enum
@@ -83,28 +76,28 @@ static void setup_interrupt(usart_handle_t *p_handle, usart_msg_t *p_msg, commun
 static uint32_t get_pclk(usart_bus_t bus);
 static inline uint32_t get_usart_div_fixed_point(usart_bus_t bus, usart_baud_t baud_rate, oversampling_mode_t oversampling);
 static inline oversampling_mode_t get_oversampling_mode(usart_bus_t bus);
-static uint16_t get_baud_rate_div_fraction(uint32_t baud_rate_div, oversampling_mode_t oversampling);
+static uint32_t get_baud_rate_div_fraction(uint32_t baud_rate_div, oversampling_mode_t oversampling);
 
 void usart_init(const usart_cfg_t *p_cfg)
 {
     rcc_set_usart_peripheral_clock_enabled(p_cfg->bus, true);
-    utils_set_bit_by_position_u16(&gp_registers[p_cfg->bus]->CR1, CR1_M, USART_WORD_LENGTH_9_BITS == p_cfg->word_length);
-    set_parity(p_cfg);
     set_mode(p_cfg);
+    utils_set_bit_by_position_u32(&gp_registers[p_cfg->bus]->CR1, CR1_M, USART_WORD_LENGTH_9_BITS == p_cfg->word_length);
+    set_parity(p_cfg);
 
     /* Clears STOP bits to avoid previous configurations */
-    utils_set_bits_u16(&gp_registers[p_cfg->bus]->CR2, (uint16_t)(USART_NUM_STOP_BITS_1_5 << CR2_STOP), false);
-    utils_set_bits_u16(&gp_registers[p_cfg->bus]->CR2, (uint16_t)(p_cfg->num_stop_bits << CR2_STOP), true);
+    utils_set_bits_u32(&gp_registers[p_cfg->bus]->CR2, (uint32_t)(USART_NUM_STOP_BITS_1_5) << CR2_STOP, false);
+    utils_set_bits_u32(&gp_registers[p_cfg->bus]->CR2, (uint32_t)(p_cfg->num_stop_bits) << CR2_STOP, true);
 
-    utils_set_bit_by_position_u16(&gp_registers[p_cfg->bus]->CR3, CR3_CTSE, p_cfg->b_cts_hardware_flow_control_enabled);
-    utils_set_bit_by_position_u16(&gp_registers[p_cfg->bus]->CR3, CR3_RTSE, p_cfg->b_rts_hardware_flow_control_enabled);
+    utils_set_bit_by_position_u32(&gp_registers[p_cfg->bus]->CR3, CR3_CTSE, p_cfg->b_cts_hardware_flow_control_enabled);
+    utils_set_bit_by_position_u32(&gp_registers[p_cfg->bus]->CR3, CR3_RTSE, p_cfg->b_rts_hardware_flow_control_enabled);
 
     set_baud_rate(p_cfg->bus, p_cfg->baud);
 }
 
 void usart_set_peripheral_enabled(usart_bus_t bus, bool b_enabled)
 {
-    utils_set_bit_by_position_u16(&gp_registers[bus]->CR1, CR1_UE, true);
+    utils_set_bit_by_position_u32(&gp_registers[bus]->CR1, CR1_UE, true);
 }
 
 void usart_transmit(usart_handle_t *p_handle, usart_msg_t *p_msg, utils_mechanism_t mechanism)
@@ -149,8 +142,8 @@ static void set_parity(const usart_cfg_t *p_cfg)
         break;
     case USART_PARITY_EVEN:
     case USART_PARITY_ODD:
-        utils_set_bit_by_position_u16(&gp_registers[p_cfg->bus]->CR1, CR1_PCE, true);
-        utils_set_bit_by_position_u16(&gp_registers[p_cfg->bus]->CR1, CR1_PS, USART_PARITY_ODD == p_cfg->parity);
+        utils_set_bit_by_position_u32(&gp_registers[p_cfg->bus]->CR1, CR1_PCE, true);
+        utils_set_bit_by_position_u32(&gp_registers[p_cfg->bus]->CR1, CR1_PS, USART_PARITY_ODD == p_cfg->parity);
         break;
     default:
         break;
@@ -176,8 +169,8 @@ static void set_mode(const usart_cfg_t *p_cfg)
     default:
         break;
     }
-    utils_set_bit_by_position_u16(&gp_registers[p_cfg->bus]->CR1, CR1_TE, b_tx_enabled);
-    utils_set_bit_by_position_u16(&gp_registers[p_cfg->bus]->CR1, CR1_RE, b_rx_enabled);
+    utils_set_bit_by_position_u32(&gp_registers[p_cfg->bus]->CR1, CR1_TE, b_tx_enabled);
+    utils_set_bit_by_position_u32(&gp_registers[p_cfg->bus]->CR1, CR1_RE, b_rx_enabled);
 }
 
 static void transmit_with_polling(usart_bus_t bus, const usart_msg_t *p_msg)
@@ -191,11 +184,11 @@ static void transmit_with_polling(usart_bus_t bus, const usart_msg_t *p_msg)
         if (USART_WORD_LENGTH_9_BITS == get_word_length(bus))
         {
             /* TODO: Check if correct */
-            gp_registers[bus]->DR = (uint16_t)(p_msg->p_buffer[buf_idx]) | ((uint16_t)(p_msg->p_buffer[buf_idx + 1u] & 1u) << 8u);
+            gp_registers[bus]->DR = (uint32_t)(p_msg->p_buffer[buf_idx]) | ((uint32_t)(p_msg->p_buffer[buf_idx + 1u] & 1u) << 8u);
         }
         else
         {
-            gp_registers[bus]->DR = (uint16_t)p_msg->p_buffer[buf_idx];
+            gp_registers[bus]->DR = (uint32_t)p_msg->p_buffer[buf_idx];
         }
     }
 
@@ -206,17 +199,17 @@ static void transmit_with_polling(usart_bus_t bus, const usart_msg_t *p_msg)
 
 static inline bool is_tx_data_register_empty(usart_bus_t bus)
 {
-    return utils_is_bit_set_u16(gp_registers[bus]->SR, SR_TXE);
+    return utils_is_bit_set_u32(gp_registers[bus]->SR, SR_TXE);
 }
 
 static inline usart_word_length_t get_word_length(usart_bus_t bus)
 {
-    return utils_is_bit_set_u16(gp_registers[bus]->CR1, CR1_M) ? USART_WORD_LENGTH_9_BITS : USART_WORD_LENGTH_8_BITS;
+    return utils_is_bit_set_u32(gp_registers[bus]->CR1, CR1_M) ? USART_WORD_LENGTH_9_BITS : USART_WORD_LENGTH_8_BITS;
 }
 
 static inline bool is_tx_complete(usart_bus_t bus)
 {
-    return utils_is_bit_set_u16(gp_registers[bus]->SR, SR_TC);
+    return utils_is_bit_set_u32(gp_registers[bus]->SR, SR_TC);
 }
 
 static void receive_with_polling(usart_bus_t bus, const usart_msg_t *p_msg)
@@ -256,12 +249,12 @@ static void receive_with_polling(usart_bus_t bus, const usart_msg_t *p_msg)
 
 static inline bool is_rx_data_register_not_empty(usart_bus_t bus)
 {
-    return utils_is_bit_set_u16(gp_registers[bus]->SR, SR_RXNE);
+    return utils_is_bit_set_u32(gp_registers[bus]->SR, SR_RXNE);
 }
 
 static inline bool is_parity_enabled(usart_bus_t bus)
 {
-    return utils_is_bit_set_u16(gp_registers[bus]->CR1, CR1_PCE);
+    return utils_is_bit_set_u32(gp_registers[bus]->CR1, CR1_PCE);
 }
 
 static void setup_interrupt(usart_handle_t *p_handle, usart_msg_t *p_msg, communication_t communication)
@@ -277,7 +270,7 @@ static void set_baud_rate(usart_bus_t bus, usart_baud_t baud_rate)
 {
     const oversampling_mode_t oversampling_mode = get_oversampling_mode(bus);
     const uint32_t baud_rate_div = get_usart_div_fixed_point(bus, baud_rate, oversampling_mode);
-    const uint16_t div_mantissa = (uint16_t)(baud_rate_div / USART_DIV_FIXED_POINT);
+    const uint32_t div_mantissa = baud_rate_div / USART_DIV_FIXED_POINT;
     gp_registers[bus]->BRR |= div_mantissa << BRR_DIV_MANTISSA;
     gp_registers[bus]->BRR |= get_baud_rate_div_fraction(baud_rate_div, oversampling_mode);
 }
@@ -306,13 +299,13 @@ static inline uint32_t get_usart_div_fixed_point(usart_bus_t bus, usart_baud_t b
 
 static inline oversampling_mode_t get_oversampling_mode(usart_bus_t bus)
 {
-    return utils_is_bit_set_u16(gp_registers[bus]->CR1, CR1_OVER8) ? OVERSAMPLING_MODE_BY_8 : OVERSAMPLING_MODE_BY_16;
+    return utils_is_bit_set_u32(gp_registers[bus]->CR1, CR1_OVER8) ? OVERSAMPLING_MODE_BY_8 : OVERSAMPLING_MODE_BY_16;
 }
 
-static uint16_t get_baud_rate_div_fraction(uint32_t baud_rate_div, oversampling_mode_t oversampling)
+static uint32_t get_baud_rate_div_fraction(uint32_t baud_rate_div, oversampling_mode_t oversampling)
 {
-    const uint16_t div_fraction = (uint16_t)(baud_rate_div % USART_DIV_FIXED_POINT);
-    const uint16_t div = OVERSAMPLING_MODE_BY_16 == oversampling ? 16u : 8u;
-    const uint16_t mask = OVERSAMPLING_MODE_BY_16 == oversampling ? 0xFu : 0x7u;
+    const uint32_t div_fraction = baud_rate_div % USART_DIV_FIXED_POINT;
+    const uint32_t div = OVERSAMPLING_MODE_BY_16 == oversampling ? 16u : 8u;
+    const uint32_t mask = OVERSAMPLING_MODE_BY_16 == oversampling ? 0xFu : 0x7u;
     return (((div_fraction * div) + 50u) / USART_DIV_FIXED_POINT) & mask;
 }
