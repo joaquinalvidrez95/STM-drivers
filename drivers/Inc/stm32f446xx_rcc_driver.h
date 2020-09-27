@@ -12,7 +12,13 @@
 #include "stm32f446xx_i2c_driver.h"
 #include "stm32f446xx_usart_driver.h"
 
-uint32_t rcc_get_pclk1(void);
+typedef enum
+{
+    RCC_APB_1 = 0,
+    RCC_APB_2 = 1,
+} rcc_apb_t;
+
+uint32_t rcc_get_pclk(rcc_apb_t apb);
 void rcc_set_i2c_peripheral_clock_enabled(i2c_bus_t bus, bool b_enabled);
 void rcc_set_usart_peripheral_clock_enabled(usart_bus_t bus, bool b_enabled);
 void rcc_reset_usart(usart_bus_t bus);

@@ -15,43 +15,40 @@
 #define MIN_AHB_PRESCALER (8u)
 #define MIN_APB1_PRESCALER (4u)
 
+#define CFGR_PPRE2 (13u)
+#define CFGR_PPRE1 (10u)
+
 /* RCC system clock switch status */
 typedef enum
 {
-    RCC_SWS_HSI = 0u,
-    RCC_SWS_HSE = 1u,
-    RCC_SWS_PLL = 2u,
-    RCC_SWS_PLL_R = 3u,
-} rcc_sws_t;
-
-typedef enum
-{
-    APB_1 = 0,
-    APB_2 = 1,
-} apb_t;
+    SWS_HSI = 0u,
+    SWS_HSE = 1u,
+    SWS_PLL = 2u,
+    SWS_PLL_R = 3u,
+} sws_t;
 
 typedef struct
 {
     uint8_t bit_position;
-    apb_t apb_idx;
+    rcc_apb_t apb_idx;
 } helper_t;
 
 static const helper_t g_usart_helpers[NUM_USART_BUSES] = {
-    [USART_BUS_1] = {.bit_position = 4u, .apb_idx = APB_2},
-    [USART_BUS_2] = {.bit_position = 17u, .apb_idx = APB_1},
-    [USART_BUS_3] = {.bit_position = 18u, .apb_idx = APB_1},
-    [UART_BUS_4] = {.bit_position = 19u, .apb_idx = APB_1},
-    [UART_BUS_5] = {.bit_position = 20u, .apb_idx = APB_1},
-    [USART_BUS_6] = {.bit_position = 5u, .apb_idx = APB_2},
+    [USART_BUS_1] = {.bit_position = 4u, .apb_idx = RCC_APB_2},
+    [USART_BUS_2] = {.bit_position = 17u, .apb_idx = RCC_APB_1},
+    [USART_BUS_3] = {.bit_position = 18u, .apb_idx = RCC_APB_1},
+    [UART_BUS_4] = {.bit_position = 19u, .apb_idx = RCC_APB_1},
+    [UART_BUS_5] = {.bit_position = 20u, .apb_idx = RCC_APB_1},
+    [USART_BUS_6] = {.bit_position = 5u, .apb_idx = RCC_APB_2},
 };
 
-static inline uint8_t get_apb_low_speed_prescaler(void);
+static inline uint8_t get_apb_prescaler(rcc_apb_t apb);
 static inline uint16_t get_ahb_prescaler(void);
 static inline uint32_t get_system_clock(void);
 
-uint32_t rcc_get_pclk1(void)
+uint32_t rcc_get_pclk(rcc_apb_t apb)
 {
-    return get_system_clock() / (uint32_t)get_ahb_prescaler() / (uint32_t)get_apb_low_speed_prescaler();
+    return (get_system_clock() / (uint32_t)get_ahb_prescaler()) / (uint32_t)get_apb_prescaler(apb);
 }
 
 void rcc_set_i2c_peripheral_clock_enabled(i2c_bus_t bus, bool b_enabled)
@@ -61,7 +58,7 @@ void rcc_set_i2c_peripheral_clock_enabled(i2c_bus_t bus, bool b_enabled)
         [I2C_BUS_2] = 22u,
         [I2C_BUS_3] = 23u,
     };
-    utils_set_bit_by_position_u32(&RCC->APBENR[APB_1], bit_positions[bus], b_enabled);
+    utils_set_bit_by_position_u32(&RCC->APBENR[RCC_APB_1], bit_positions[bus], b_enabled);
 }
 
 void rcc_set_usart_peripheral_clock_enabled(usart_bus_t bus, bool b_enabled)
@@ -81,15 +78,15 @@ static inline uint32_t get_system_clock(void)
     uint32_t system_clock = 0u;
     switch (clock_source)
     {
-    case RCC_SWS_HSI:
+    case SWS_HSI:
         system_clock = 16000000u;
         break;
-    case RCC_SWS_HSE:
+    case SWS_HSE:
         system_clock = 8000000u;
         break;
-    case RCC_SWS_PLL:
+    case SWS_PLL:
         break;
-    case RCC_SWS_PLL_R:
+    case SWS_PLL_R:
         break;
     default:
         break;
@@ -105,10 +102,11 @@ static inline uint16_t get_ahb_prescaler(void)
     return hpre < MIN_AHB_PRESCALER ? 1u : AHB_PRESCALERS[hpre - MIN_AHB_PRESCALER];
 }
 
-static inline uint8_t get_apb_low_speed_prescaler(void)
+static inline uint8_t get_apb_prescaler(rcc_apb_t apb)
 {
     const uint8_t APB1_PRESCALERS[MIN_APB1_PRESCALER] = {2u, 4u, 8u, 16u};
-    const uint8_t ppre1 = (RCC->CFGR >> 10u) & 0x7u;
+    const uint32_t bit_position = RCC_APB_1 == apb ? CFGR_PPRE1 : CFGR_PPRE2;
+    const uint8_t ppre = (RCC->CFGR >> bit_position) & 0x7u;
 
-    return ppre1 < MIN_APB1_PRESCALER ? 1u : APB1_PRESCALERS[ppre1 - MIN_APB1_PRESCALER];
+    return ppre < MIN_APB1_PRESCALER ? 1u : APB1_PRESCALERS[ppre - MIN_APB1_PRESCALER];
 }

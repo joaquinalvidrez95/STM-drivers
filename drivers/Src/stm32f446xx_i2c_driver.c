@@ -113,7 +113,7 @@ void i2c_init(const i2c_cfg_t *p_cfg)
     /* Configures ACK control bit */
     i2c_set_ack(p_cfg->bus, p_cfg->ack_control);
 
-    const uint32_t pclk1 = rcc_get_pclk1();
+    const uint32_t pclk1 = rcc_get_pclk(RCC_APB_1);
 
     /* Configures FREQ */
     g_handles[p_cfg->bus].p_reg->CR2 = (uint16_t)(pclk1 / 1000000u) & 0b111111u;
