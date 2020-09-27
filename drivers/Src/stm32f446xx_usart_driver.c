@@ -15,6 +15,7 @@
 #include "utils.h"
 #include "communication.h"
 
+#define CR1_OVER8 (15u)
 #define CR1_UE (13u)
 #define CR1_M (12u)
 #define CR1_PCE (10u)
@@ -30,6 +31,10 @@
 #define SR_TXE (7u)
 #define SR_TC (6u)
 #define SR_RXNE (5u)
+
+#define BRR_DIV_MANTISSA (4u)
+
+#define USART_DIV_FIXED_POINT (100u)
 
 typedef struct
 {
@@ -49,6 +54,12 @@ typedef struct
     uint16_t _reserved_6;
 } reg_t;
 
+typedef enum
+{
+    OVERSAMPLING_MODE_BY_16,
+    OVERSAMPLING_MODE_BY_8,
+} oversampling_mode_t;
+
 static reg_t *const gp_registers[NUM_USART_BUSES] = {
     [USART_BUS_1] = (reg_t *)USART1_BASEADDR,
     [USART_BUS_2] = (reg_t *)USART2_BASEADDR,
@@ -60,6 +71,7 @@ static reg_t *const gp_registers[NUM_USART_BUSES] = {
 
 static void set_parity(const usart_cfg_t *p_cfg);
 static void set_mode(const usart_cfg_t *p_cfg);
+static void set_baud_rate(usart_bus_t bus, usart_baud_t baud_rate);
 static void transmit_with_polling(usart_bus_t bus, const usart_msg_t *p_msg);
 static void receive_with_polling(usart_bus_t bus, const usart_msg_t *p_msg);
 static inline bool is_tx_data_register_empty(usart_bus_t bus);
@@ -68,6 +80,10 @@ static inline usart_word_length_t get_word_length(usart_bus_t bus);
 static inline bool is_parity_enabled(usart_bus_t bus);
 static inline bool is_tx_complete(usart_bus_t bus);
 static void setup_interrupt(usart_handle_t *p_handle, usart_msg_t *p_msg, communication_t communication);
+static uint32_t get_pclk(usart_bus_t bus);
+static inline uint32_t get_usart_div_fixed_point(usart_bus_t bus, usart_baud_t baud_rate, oversampling_mode_t oversampling);
+static inline oversampling_mode_t get_oversampling_mode(usart_bus_t bus);
+static uint16_t get_baud_rate_div_fraction(uint32_t baud_rate_div, oversampling_mode_t oversampling);
 
 void usart_init(const usart_cfg_t *p_cfg)
 {
@@ -82,6 +98,8 @@ void usart_init(const usart_cfg_t *p_cfg)
 
     utils_set_bit_by_position_u16(&gp_registers[p_cfg->bus]->CR3, CR3_CTSE, p_cfg->b_cts_hardware_flow_control_enabled);
     utils_set_bit_by_position_u16(&gp_registers[p_cfg->bus]->CR3, CR3_RTSE, p_cfg->b_rts_hardware_flow_control_enabled);
+
+    set_baud_rate(p_cfg->bus, p_cfg->baud);
 }
 
 void usart_set_peripheral_enabled(usart_bus_t bus, bool b_enabled)
@@ -253,4 +271,48 @@ static void setup_interrupt(usart_handle_t *p_handle, usart_msg_t *p_msg, commun
         p_handle->irq_mgr.p_msg = p_msg;
         p_handle->irq_mgr.state = COMMUNICATION_RX == communication ? USART_IRQ_MGR_STATE_BUSY_IN_RX : USART_IRQ_MGR_STATE_BUSY_IN_TX;
     }
+}
+
+static void set_baud_rate(usart_bus_t bus, usart_baud_t baud_rate)
+{
+    const oversampling_mode_t oversampling_mode = get_oversampling_mode(bus);
+    const uint32_t baud_rate_div = get_usart_div_fixed_point(bus, baud_rate, oversampling_mode);
+    const uint16_t div_mantissa = (uint16_t)(baud_rate_div / USART_DIV_FIXED_POINT);
+    gp_registers[bus]->BRR |= div_mantissa << BRR_DIV_MANTISSA;
+    gp_registers[bus]->BRR |= get_baud_rate_div_fraction(baud_rate_div, oversampling_mode);
+}
+
+static uint32_t get_pclk(usart_bus_t bus)
+{
+    rcc_apb_t apb = RCC_APB_1;
+    switch (bus)
+    {
+    case USART_BUS_1:
+    case USART_BUS_6:
+        apb = RCC_APB_2;
+        break;
+
+    default:
+        break;
+    }
+    return rcc_get_pclk(apb);
+}
+
+static inline uint32_t get_usart_div_fixed_point(usart_bus_t bus, usart_baud_t baud_rate, oversampling_mode_t oversampling)
+{
+    const uint32_t oversampling_factor = 8u * (2u - (uint32_t)oversampling);
+    return ((get_pclk(bus) * USART_DIV_FIXED_POINT) / oversampling_factor) / (uint32_t)baud_rate;
+}
+
+static inline oversampling_mode_t get_oversampling_mode(usart_bus_t bus)
+{
+    return utils_is_bit_set_u16(gp_registers[bus]->CR1, CR1_OVER8) ? OVERSAMPLING_MODE_BY_8 : OVERSAMPLING_MODE_BY_16;
+}
+
+static uint16_t get_baud_rate_div_fraction(uint32_t baud_rate_div, oversampling_mode_t oversampling)
+{
+    const uint16_t div_fraction = (uint16_t)(baud_rate_div % USART_DIV_FIXED_POINT);
+    const uint16_t div = OVERSAMPLING_MODE_BY_16 == oversampling ? 16u : 8u;
+    const uint16_t mask = OVERSAMPLING_MODE_BY_16 == oversampling ? 0xFu : 0x7u;
+    return (((div_fraction * div) + 50u) / USART_DIV_FIXED_POINT) & mask;
 }
